@@ -116,6 +116,8 @@ router.post('/extract-philosophy', async (req, res, next) => {
                 content: `You are an alarm management expert specializing in ISA 18.2, IEC 62682, and EEMUA 191 standards.
 Extract structured alarm philosophy rules from the provided document.
 
+IMPORTANT: The JSON structure below shows the required keys. Replace ALL example values with actual values extracted from the document.
+
 Output MUST be valid JSON with this exact structure:
 {
   "document": {
@@ -257,6 +259,13 @@ Output MUST be valid JSON with this exact structure:
     }
   ]
 }
+
+CRITICAL INSTRUCTIONS:
+- Use the EXACT key names shown above (severity, max_response_time, priority, impact_category, entry, etc.)
+- Extract ALL values from the provided document - do NOT use the example values above
+- The priority_matrix should contain all combinations of severity levels and response time ranges found in the document
+- The severity_matrix should define what each severity level means for each impact category
+- Include ALL rules found in the document in the "rules" array
 
 Return ONLY the JSON object. Do not include markdown code blocks.`
             },
