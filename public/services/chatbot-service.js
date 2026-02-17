@@ -1297,23 +1297,6 @@ Write naturally. Use paragraphs. Add structure only where it helps clarity.`;
 
         const thoughts = [];
 
-        // --- URL SANITIZATION FIX ---
-        // 1. Trim whitespace
-        let cleanEndpoint = this.config.endpoint.trim();
-
-        // 2. Ensure https:// protocol exists
-        if (!cleanEndpoint.startsWith('http')) {
-            cleanEndpoint = 'https://' + cleanEndpoint;
-        }
-
-        // 3. Remove trailing slash if present
-        if (cleanEndpoint.endsWith('/')) {
-            cleanEndpoint = cleanEndpoint.slice(0, -1);
-        }
-
-        // Call backend API instead of Azure directly
-        // ---------------------------
-
         // Prepare messages for conversation history
         const conversationMessages = conversationHistory.map(msg => ({
             role: msg.role,
