@@ -1364,9 +1364,9 @@ Generate for EACH alarm:
 1. Cause - Use "Guideword" method (Valve Failure, Pump Trip, Controller Error, Instrument Error, Blockage, Leak, etc.)
 2. Consequence - DIRECT plant consequence if operator takes NO action
 3. Corrective Action - Clear actionable operator instruction
-4. Proposed Priority - Use the detected priority scheme from the input data. Use values like: Priority 1/Priority 2/Priority 3, OR High/Medium/Low, OR Urgent/High/Low, as appropriate to match the site's naming convention. Also include REMOVE/No Alarm/Diagnostic as needed.
-5. Max Time to Respond - Based on priority (Priority 1/Urgent: <3min, Priority 2/High: 3-10min, Priority 3/Medium: 10-30min, Low: >30min)
-6. Reasoning - 1-2 sentences explaining your rationale, citing the specific Vendor Rule, Philosophy Section, or Reference Alarm used
+4. Proposed Priority - If a priority matrix is provided in the Philosophy Rules, use ONLY the exact priority values from that matrix (e.g., "No Alarm", "Low", "High", "Emergency"). If no matrix is provided, match the site's naming convention. Also include REMOVE when appropriate.
+5. Max Time to Respond - Based on priority matrix mapping or standard times (Urgent/Emergency: <3min, High: 3-10min, Medium/Low: 10-30min, No Alarm: >30min)
+6. Reasoning - 1-2 sentences explaining your rationale, citing the specific Vendor Rule, Philosophy Matrix entry, or Reference Alarm used
 
 Rules:
 - If alarm implies safety interlock (Trip, Shutdown, ESD), Consequence reflects shutdown impact
@@ -1385,9 +1385,9 @@ Output JSON array:
     "Cause": "...",
     "Consequence": "...",
     "Corrective Action": "...",
-    "Proposed Priority": "Priority 1|Priority 2|Priority 3|High|Medium|Low|Urgent|REMOVE|No Alarm|Diagnostic",
+    "Proposed Priority": "<use exact values from priority matrix if provided, or match site naming convention>",
     "Max Time to Respond": "X minutes",
-    "Reasoning": "Brief citation of the specific Vendor Rule or Philosophy Rule used, e.g., 'Removed PVHH per Honeywell Preset - No distinct action from PVHI'"
+    "Reasoning": "Brief citation of the specific Vendor Rule, Philosophy Matrix rule, or Reference Alarm used, e.g., 'Per philosophy matrix: SEVERE consequence + <3min response = Emergency priority'"
   }
 ]`
     },
@@ -2206,10 +2206,19 @@ Return a merged, enriched JSON object with the SAME structure as the input, but 
             }
         }
 
-        // Get detected priority scheme for consistent output naming
-        const prioritySchemeInstruction = this.detectedPriorityScheme === 'descriptive'
-            ? `\n\nIMPORTANT - PRIORITY NAMING: The source data uses DESCRIPTIVE priority names (High, Medium, Low, Urgent, etc.). Your Proposed Priority values MUST use the same descriptive naming style (e.g., "High", "Medium", "Low", "Urgent", "None", "Remove"). Do NOT use numeric priority names like "Priority 1" for this dataset.\n`
-            : `\n\nIMPORTANT - PRIORITY NAMING: The source data uses NUMERIC priority names (Priority 1, Priority 2, Priority 3, etc.). Your Proposed Priority values MUST use the same numeric naming style (e.g., "Priority 1", "Priority 2", "Priority 3", "No Alarm", "Remove"). Do NOT use descriptive names like "High" for this dataset.\n`;
+        // Get priority values from matrix if available, otherwise use detected scheme
+        let prioritySchemeInstruction = '';
+        if (philosophyRules && philosophyRules.priority_matrix && philosophyRules.priority_matrix.length > 0) {
+            // Extract unique priority values from the matrix
+            const uniquePriorities = [...new Set(philosophyRules.priority_matrix.map(item => item.priority))];
+            const priorityList = uniquePriorities.map(p => `"${p}"`).join(', ');
+            prioritySchemeInstruction = `\n\nCRITICAL - PRIORITY VALUES: You MUST use ONLY these exact priority values from the philosophy priority matrix: ${priorityList}. Also include "REMOVE" when applicable. Do NOT use any other priority naming (no "Priority 1/2/3" unless those exact strings are in the list above).\n`;
+        } else {
+            // Fallback to detected scheme if no priority matrix
+            prioritySchemeInstruction = this.detectedPriorityScheme === 'descriptive'
+                ? `\n\nIMPORTANT - PRIORITY NAMING: The source data uses DESCRIPTIVE priority names (High, Medium, Low, Urgent, etc.). Your Proposed Priority values MUST use the same descriptive naming style (e.g., "High", "Medium", "Low", "Urgent", "None", "Remove"). Do NOT use numeric priority names like "Priority 1" for this dataset.\n`
+                : `\n\nIMPORTANT - PRIORITY NAMING: The source data uses NUMERIC priority names (Priority 1, Priority 2, Priority 3, etc.). Your Proposed Priority values MUST use the same numeric naming style (e.g., "Priority 1", "Priority 2", "Priority 3", "No Alarm", "Remove"). Do NOT use descriptive names like "High" for this dataset.\n`;
+        }
 
         const userPrompt = `Process Context: ${processContext || 'Industrial process equipment'}
 ${rulesContext}${processAnalysisContext}${referenceContext}${previousContext}${prioritySchemeInstruction}
