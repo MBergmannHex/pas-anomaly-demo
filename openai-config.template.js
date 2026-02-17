@@ -1,11 +1,12 @@
-// OpenAI Configuration
-// IMPORTANT: Keep this file secure and do not commit to version control
+// OpenAI Configuration Template
+// IMPORTANT: Copy this file to openai-config.js and fill in your actual values
+// DO NOT commit openai-config.js with real credentials
 window.OPENAI_CONFIG = {
     // Azure OpenAI Settings
-    apiKey: '8b6760edb24446b7bc16d2fe3a7a0b88',
-    endpoint: 'https://hobbits-gpt-eastus2.openai.azure.com',
+    apiKey: 'YOUR_AZURE_OPENAI_API_KEY_HERE',
+    endpoint: 'https://YOUR-RESOURCE.openai.azure.com',
     deploymentName: 'gpt-4.1',
-    apiVersion: '2025-03-01-preview'
+    apiVersion: '2024-02-15-preview'
 };
 
 // Immediately configure the chatbot service if it exists and config is not placeholder
