@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**IMPORTANT**: When making architectural changes or adding new features, please update this file to reflect the current state of the codebase. This ensures consistent development practices.
+
 ## Project Overview
 
 **Alarm Analyzer Pro v5** - AI-Enhanced alarm rationalization application for process control systems. Complies with ISA 18.2, IEC 62682, and EEMUA 191 standards for alarm management.
@@ -16,6 +18,7 @@ The application analyzes alarm databases (CSV), extracts philosophy rules from P
 
 - **server.js** - Express server, serves static files, API routing
 - **services/openai-proxy.js** - Proxies all Azure OpenAI API calls (hides API key)
+- **prompts/** - AI system prompts (server-side only, not browser-accessible)
 - **routes/** - API endpoints for chat, D&R processing, control loop analysis
 - **middleware/** - Error handling, rate limiting
 
@@ -53,6 +56,34 @@ The backend uses **Azure OpenAI** with two deployment configurations:
 - `AZURE_OPENAI_DR_DEPLOYMENT` - D&R reasoning model (e.g., gpt-5, o1, o3)
 
 API credentials are stored server-side in `.env` (local) or Azure App Service environment variables (production).
+
+### AI Prompt Management
+
+All AI system prompts are stored in `server/prompts/` for security and easy editing:
+
+**Prompt Files:**
+- `batch-drafter.js` - 189-line ISA 18.2 D&R system prompt with vendor presets, alarm dictionaries, and compliance rules
+- `process-analyzer.js` - Process analysis and failure pattern recognition
+- `chatbot-persona.js` - Chatbot AI persona with tool usage rules
+- `philosophy-extraction.js` - Philosophy document parsing rules
+- `control-loop-parser.js` - Control loop log extraction (template function)
+- `report-generation.js` - PDF report narrative generation (template function)
+- `regex-derivation.js` - Regex pattern derivation (template function)
+- `chat-philosophy-extract.js` - Simple philosophy extraction prefix
+- `safety-enrichment.js` - Safety data extraction prefix
+- `index.js` - Central exports for all prompts
+
+**Architecture:**
+- Frontend sends **only data** (alarm lists, CSV text, log entries, etc.)
+- Backend **constructs prompts** by loading from `server/prompts/` and injecting data
+- Prompts are **not browser-accessible** - hidden from DevTools
+- Template prompts are functions that accept parameters and return prompt strings
+
+**When to edit prompts:**
+- To add new vendor DCS platforms → edit `batch-drafter.js`
+- To change chatbot behavior → edit `chatbot-persona.js`
+- To modify philosophy extraction schema → edit `philosophy-extraction.js`
+- To adjust process analysis guidance → edit `process-analyzer.js`
 
 ## Running the Application
 
@@ -148,14 +179,16 @@ AI output automatically matches the detected scheme from the uploaded CSV.
 
 ### Embedded Standards Knowledge
 
-The [dr-processor.js](services/dr-processor.js) contains comprehensive alarm management rules:
+The AI system prompts in `server/prompts/batch-drafter.js` contain comprehensive alarm management rules:
 
 - **ISA 18.2 / IEC 62682** compliance rules
-- **Vendor presets** for 6 major DCS platforms
+- **Vendor presets** for 6 major DCS platforms (Foxboro I/A, Yokogawa CENTUM, DeltaV, Wonderware, Honeywell, Emerson Ovation)
 - **Alarm Display Name dictionary** (80+ alarm types)
 - **Combination alarm rules** (HH/LL rationalization)
 - **ESD bypass alarm guidelines**
 - **Rate of change alarm policies**
+
+These rules are **server-side only** and not visible in browser DevTools.
 
 ### Reference Alarm Propagation
 
@@ -163,11 +196,23 @@ When processing alarms, the AI uses "D&R Complete" alarms from the same equipmen
 
 ## Key Files
 
-- [index.html](index.html) - Main application UI (374KB monolithic file)
-- [style.css](style.css) - Application styles
-- [openai-config.js](openai-config.js) - Azure OpenAI credentials (**keep secure**)
-- [services/dr-processor.js](services/dr-processor.js) - Core rationalization engine with ISA 18.2 compliance
+**Frontend:**
+- [public/index.html](public/index.html) - Main application UI (374KB monolithic file)
+- [public/style.css](public/style.css) - Application styles
+- [public/services/dr-processor.js](public/services/dr-processor.js) - Core rationalization engine, batch processing logic
+- [public/services/chatbot-service.js](public/services/chatbot-service.js) - AI chat interface with tool calling
+
+**Backend:**
+- [server/server.js](server/server.js) - Express server setup
+- [server/services/openai-proxy.js](server/services/openai-proxy.js) - Azure OpenAI API proxy
+- [server/prompts/](server/prompts/) - All AI system prompts (secured server-side)
+- [server/routes/chat.js](server/routes/chat.js) - Chat and report generation endpoints
+- [server/routes/dr-process.js](server/routes/dr-process.js) - D&R rationalization endpoints
+- [server/routes/control-loop.js](server/routes/control-loop.js) - Control loop analysis endpoints
+
+**Documentation:**
 - [docs/AI_Rationalization_Workflow.md](docs/AI_Rationalization_Workflow.md) - Detailed workflow documentation
+- [CLAUDE.md](CLAUDE.md) - This file - development guidance
 
 ## Data Format
 
@@ -190,11 +235,11 @@ AI fills the next available empty slot (e.g., if `Cause1` exists, uses `Cause2`)
 
 ### Adding New Vendor Presets
 
-Edit the system prompt in [dr-processor.js](services/dr-processor.js:2000-2500) to add vendor-specific alarm rules.
+Edit the `batch-drafter.js` prompt file in [server/prompts/batch-drafter.js](server/prompts/batch-drafter.js) under the "VENDOR-SPECIFIC D&R PRESETS" section (around line 70-130) to add vendor-specific alarm rules.
 
 ### Adjusting Batch Size
 
-Default is 10 alarms per batch. Modify `batchDraftRationalizations()` in [dr-processor.js](services/dr-processor.js) to change batch size (impacts API token usage).
+Default is 10 alarms per batch. Modify `batchDraftRationalizations()` in [public/services/dr-processor.js](public/services/dr-processor.js) to change batch size (impacts API token usage).
 
 ### Changing Reasoning Model Behavior
 
@@ -202,9 +247,19 @@ Reasoning models (GPT-5, o1, o3) use the `reasoningEffort` setting: 'low', 'medi
 
 ## Security Notes
 
-- **openai-config.js** contains API keys - ensure it's not committed with actual credentials
-- The `.gitignore` includes `.env` and `*.log` but `openai-config.js` is tracked (should contain only placeholders)
-- API configuration is also stored in browser localStorage for user-specific settings
+**API Keys & Credentials:**
+- Never commit `.env` file (already in `.gitignore`)
+- Azure OpenAI credentials are server-side only (in `.env` or Azure App Service environment variables)
+- The frontend has **no direct access** to API keys
+
+**Prompt Security:**
+- All AI system prompts are in `server/prompts/` - **not browser-accessible**
+- Proprietary ISA 18.2 rules, vendor presets, and prompt engineering are hidden from DevTools
+- Frontend sends only data; backend constructs prompts server-side
+
+**Static File Serving:**
+- Only `public/` directory is served as static files
+- `server/`, `.env`, and `node_modules/` are never exposed to browsers
 
 ## Browser Compatibility
 
