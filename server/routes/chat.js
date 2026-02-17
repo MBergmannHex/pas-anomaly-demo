@@ -5,6 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const openaiProxy = require('../services/openai-proxy');
+const prompts = require('../prompts');
 
 /**
  * POST /api/chat/send
@@ -32,11 +33,12 @@ router.post('/send', async (req, res, next) => {
             }
         ];
 
-        // Call Responses API
+        // Call Responses API with chatbot persona system prompt
         const result = await openaiProxy.callResponses(input, {
             deploymentType: modelConfig.deploymentType || 'general',
             reasoningEffort: modelConfig.reasoningEffort,
-            maxOutputTokens: 16000
+            maxOutputTokens: 16000,
+            instructions: prompts.chatbotPersona
         });
 
         res.json(result);
@@ -57,12 +59,13 @@ router.post('/follow-up', async (req, res, next) => {
             return res.status(400).json({ error: 'inputMessages array is required' });
         }
 
-        // Call Responses API with tool results
+        // Call Responses API with tool results and chatbot persona
         const result = await openaiProxy.callResponses(inputMessages, {
             deploymentType: modelConfig.deploymentType || 'general',
             reasoningEffort: modelConfig.reasoningEffort,
             tools: tools,
-            maxOutputTokens: 16000
+            maxOutputTokens: 16000,
+            instructions: prompts.chatbotPersona
         });
 
         res.json(result);
@@ -77,11 +80,14 @@ router.post('/follow-up', async (req, res, next) => {
  */
 router.post('/generate-report', async (req, res, next) => {
     try {
-        const { systemPrompt, temperature = 0.7 } = req.body;
+        const { dataSummary, focusArea, temperature = 0.7 } = req.body;
 
-        if (!systemPrompt) {
-            return res.status(400).json({ error: 'systemPrompt is required' });
+        if (!dataSummary) {
+            return res.status(400).json({ error: 'dataSummary is required' });
         }
+
+        // Construct prompt server-side
+        const systemPrompt = prompts.reportGeneration(dataSummary, focusArea);
 
         const messages = [
             { role: 'system', content: systemPrompt }
@@ -117,7 +123,7 @@ router.post('/extract-philosophy', async (req, res, next) => {
             {
                 type: 'message',
                 role: 'user',
-                content: `Extract alarm philosophy rules from this document:\n\n${truncatedText}`
+                content: `${prompts.chatPhilosophyExtract}${truncatedText}`
             }
         ];
 
@@ -151,7 +157,7 @@ router.post('/enrich-safety', async (req, res, next) => {
             {
                 type: 'message',
                 role: 'user',
-                content: `Extract safety data from this document:\n\n${truncatedText}`
+                content: `${prompts.safetyEnrichment}${truncatedText}`
             }
         ];
 

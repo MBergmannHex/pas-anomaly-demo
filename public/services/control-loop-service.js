@@ -107,29 +107,14 @@ window.controlLoopService = {
     _extractValuesWithLLM: async function (tag, logEntries) {
         console.log(`[ControlLoop] sending ${logEntries.length} logs to LLM for value extraction`);
 
-        const systemPrompt = `You are a Control Loop Data Parser.
-        Your ONLY job is to extract numerical changes from log messages for loop "${tag}".
-
-        Look for:
-        1. Set Point (SP) changes (e.g., "SP changed to 50", "Set 50.5", "Tag: ${tag} SP")
-        2. Output (OP) changes (e.g., "Output 10%", "Manual 55", "Tag: ${tag} CV")
-        3. Mode changes (e.g., "Auto to Manual")
-
-        Return a raw JSON array ONLY. No markdown, no explanation.
-        Format: [{"timestamp": number, "type": "SP"|"OP"|"MODE", "old_val": number|null, "new_val": number|string}]
-
-        If a log entry has no relevant control change, ignore it.`;
-
-        const userPrompt = `Analyze these logs:\n${logEntries.map(e => e.text).join('\n')}`;
-
         try {
-            // Call backend API instead of Azure directly
+            // Call backend API - prompts are constructed server-side
             const response = await fetch('/api/control-loop/extract', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    systemPrompt,
-                    userPrompt,
+                    tag,
+                    logEntries,
                     maxOutputTokens: 1000,
                     temperature: 0
                 })

@@ -5,6 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const openaiProxy = require('../services/openai-proxy');
+const prompts = require('../prompts');
 
 /**
  * POST /api/control-loop/extract
@@ -12,11 +13,15 @@ const openaiProxy = require('../services/openai-proxy');
  */
 router.post('/extract', async (req, res, next) => {
     try {
-        const { systemPrompt, userPrompt, maxOutputTokens = 1000, temperature = 0 } = req.body;
+        const { tag, logEntries, maxOutputTokens = 1000, temperature = 0 } = req.body;
 
-        if (!systemPrompt || !userPrompt) {
-            return res.status(400).json({ error: 'systemPrompt and userPrompt are required' });
+        if (!tag || !logEntries || !Array.isArray(logEntries)) {
+            return res.status(400).json({ error: 'tag and logEntries array are required' });
         }
+
+        // Construct prompts server-side
+        const systemPrompt = prompts.controlLoopParser(tag);
+        const userPrompt = `Analyze these logs:\n${logEntries.map(e => e.text || e).join('\n')}`;
 
         const input = [
             {
