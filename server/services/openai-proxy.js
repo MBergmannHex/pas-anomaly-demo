@@ -116,10 +116,15 @@ class OpenAIProxy {
         const isReasoning = this.isReasoningModel(deployment);
         const reasoningEffort = options.reasoningEffort || this.defaultReasoningEffort;
 
-        const body = {
-            model: deployment,
-            input: input
-        };
+        // Convert input array (Responses API format) to messages array (Chat Completions format)
+        // Input format: [{ type: 'message', role: 'user', content: '...' }]
+        // Messages format: [{ role: 'user', content: '...' }]
+        const messages = input.map(item => ({
+            role: item.role,
+            content: item.content
+        }));
+
+        const body = { messages };
 
         // Add reasoning effort for reasoning models
         if (isReasoning) {
@@ -128,17 +133,20 @@ class OpenAIProxy {
             body.temperature = options.temperature;
         }
 
-        // Add other parameters
+        // Add token limit - reasoning models use max_completion_tokens
         if (options.maxOutputTokens) {
-            body.max_output_tokens = options.maxOutputTokens;
-        }
-        if (options.tools) {
-            body.tools = options.tools;
+            if (isReasoning) {
+                body.max_completion_tokens = options.maxOutputTokens;
+            } else {
+                body.max_tokens = options.maxOutputTokens;
+            }
         }
 
-        const url = `${this.endpoint}/openai/v1/responses`;
+        // Note: tools parameter not supported in this wrapper (web_search handled separately)
 
-        console.log(`[OpenAI] Responses API - Model: ${deployment}, Reasoning: ${isReasoning}`);
+        const url = `${this.endpoint}/openai/deployments/${deployment}/chat/completions?api-version=${this.apiVersion}`;
+
+        console.log(`[OpenAI] Responses API (using Chat Completions) - Model: ${deployment}, Reasoning: ${isReasoning}`);
 
         const response = await fetch(url, {
             method: 'POST',
@@ -170,8 +178,16 @@ class OpenAIProxy {
 
         const data = await response.json();
 
+        // Convert Chat Completions response to Responses API format for compatibility
         return {
-            output: data.output || [],
+            output: [{
+                type: 'message',
+                role: 'assistant',
+                content: [{
+                    type: 'output_text',
+                    text: data.choices?.[0]?.message?.content || ''
+                }]
+            }],
             usage: data.usage || {}
         };
     }
