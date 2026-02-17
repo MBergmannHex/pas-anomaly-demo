@@ -85,6 +85,40 @@ The app is configured for Azure App Service with:
 - **Environment variables** - Set in Azure Portal under Configuration
 - **Deployment** - Git push, GitHub Actions, or Azure CLI
 
+## Development Workflow
+
+### Git Commits and Deployment
+
+**IMPORTANT**: After making code changes, always commit and push to GitHub to trigger automatic deployment to Azure.
+
+**Standard workflow:**
+1. Make changes to code
+2. Test locally (if applicable)
+3. Stage and commit changes:
+   ```bash
+   git add <files>
+   git commit -m "Description of changes
+
+   Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
+   ```
+4. **Push to GitHub** (triggers auto-deployment):
+   ```bash
+   git push origin main
+   ```
+5. GitHub Actions automatically deploys to Azure App Service
+
+**Files to exclude from commits:**
+- `.env` (local environment variables)
+- `*.log` (log files)
+- `.claude/settings.local.json` (local Claude settings)
+- Temporary files (e.g., `*.backup`, `*.zip`, `*.tar.gz`)
+
+**Best practices:**
+- Write clear, descriptive commit messages
+- Group related changes in a single commit
+- Always push after completing a feature or fix
+- Verify deployment success via GitHub Actions or Azure Portal
+
 ## Configuration
 
 ### Azure OpenAI Setup
