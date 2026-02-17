@@ -126,9 +126,11 @@ class OpenAIProxy {
             body.instructions = options.instructions;
         }
 
-        // Add reasoning effort for reasoning models
+        // Add reasoning effort for reasoning models (nested structure)
         if (isReasoning) {
-            body.reasoning_effort = reasoningEffort;
+            body.reasoning = {
+                effort: reasoningEffort
+            };
         } else if (options.temperature !== undefined) {
             body.temperature = options.temperature;
         }
