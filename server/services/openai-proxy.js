@@ -121,6 +121,11 @@ class OpenAIProxy {
             input: input
         };
 
+        // Add system instructions if specified (separate from input array)
+        if (options.instructions) {
+            body.instructions = options.instructions;
+        }
+
         // Add reasoning effort for reasoning models
         if (isReasoning) {
             body.reasoning_effort = reasoningEffort;

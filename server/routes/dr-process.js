@@ -18,17 +18,6 @@ router.post('/analyze-process', async (req, res, next) => {
             return res.status(400).json({ error: 'userPrompt is required' });
         }
 
-        // Build input with system instructions and user prompt
-        const input = [];
-
-        if (systemInstructions) {
-            input.push({
-                type: 'message',
-                role: 'system',
-                content: systemInstructions
-            });
-        }
-
         // Build user message content (text + optional image)
         let userContent = userPrompt;
 
@@ -45,17 +34,21 @@ router.post('/analyze-process', async (req, res, next) => {
             ];
         }
 
-        input.push({
-            type: 'message',
-            role: 'user',
-            content: userContent
-        });
+        // Build input array (user messages only)
+        const input = [
+            {
+                type: 'message',
+                role: 'user',
+                content: userContent
+            }
+        ];
 
         // Call with retry logic for context_length_exceeded
         const result = await openaiProxy.callResponsesWithRetry(input, {
             deploymentType: modelConfig.deploymentType || 'dr',
             reasoningEffort: modelConfig.reasoningEffort,
-            maxOutputTokens
+            maxOutputTokens,
+            instructions: systemInstructions  // System prompt as separate field
         });
 
         res.json(result);
