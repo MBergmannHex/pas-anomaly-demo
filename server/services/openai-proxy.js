@@ -141,6 +141,8 @@ class OpenAIProxy {
         const url = `${this.endpoint}/openai/v1/responses`;
 
         console.log(`[OpenAI] Responses API - Model: ${deployment}, Reasoning: ${isReasoning}`);
+        console.log(`[OpenAI] Request URL:`, url);
+        console.log(`[OpenAI] Request Body:`, JSON.stringify(body, null, 2));
 
         const response = await fetch(url, {
             method: 'POST',
@@ -154,6 +156,7 @@ class OpenAIProxy {
         if (!response.ok) {
             const errorText = await response.text();
             console.error(`[OpenAI] Error ${response.status}:`, errorText);
+            console.error(`[OpenAI] Request that failed:`, JSON.stringify(body, null, 2));
 
             // Handle context_length_exceeded specifically
             if (errorText.includes('context_length_exceeded')) {
