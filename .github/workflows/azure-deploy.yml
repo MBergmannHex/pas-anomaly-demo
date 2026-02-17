@@ -22,13 +22,10 @@ jobs:
       with:
         node-version: ${{ env.NODE_VERSION }}
 
-    - name: npm install
-      run: npm install
-
     - name: Create deployment package
       run: |
         zip -r deploy.zip . \
-          -x ".git/*" ".github/*" "node_modules/.cache/*" "*.md"
+          -x ".git/*" ".github/*" "node_modules/*" "*.md"
 
     - name: Azure Login via Azure CLI
       uses: azure/login@v1
