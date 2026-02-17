@@ -1,12 +1,8 @@
 // Global namespace for chatbot service - ISA 18.2 / IEC 62682 / EEMUA 191 compliant
 window.chatbotService = {
     config: {
-        apiKey: '',
-        endpoint: '',
-        deploymentName: 'gpt-4', // Legacy field for backward compatibility
-        generalDeploymentName: 'gpt-4.1', // For general chat/assistant
-        drDeploymentName: 'gpt-5', // For D&R reasoning (can use o1/o3/o4/gpt-5)
-        apiVersion: '2024-02-15-preview',
+        // API key and endpoint are now handled server-side
+        // These are kept for UI preferences only
         reasoningEffort: 'medium' // For GPT-5/o-series models: 'low', 'medium', 'high', 'xhigh'
     },
 
@@ -32,26 +28,18 @@ window.chatbotService = {
 
     initialize: function () {
         console.log('[Chatbot] Initializing service...');
-        this.config.apiKey = localStorage.getItem('chatbotApiKey') || '';
-        this.config.endpoint = localStorage.getItem('chatbotEndpoint') || '';
-        this.config.deploymentName = localStorage.getItem('chatbotDeploymentName') || 'gpt-4';
-        this.config.generalDeploymentName = localStorage.getItem('chatbotGeneralDeploymentName') || localStorage.getItem('chatbotDeploymentName') || 'gpt-4.1';
-        this.config.drDeploymentName = localStorage.getItem('chatbotDrDeploymentName') || 'gpt-5';
-        this.config.apiVersion = localStorage.getItem('chatbotApiVersion') || '2024-02-15-preview';
+        // Only load UI preferences (reasoning effort)
         this.config.reasoningEffort = localStorage.getItem('chatbotReasoningEffort') || 'medium';
         console.log('[Chatbot] Configuration loaded');
     },
 
     saveConfig: function (config) {
         console.log('[Chatbot] Saving configuration...');
-        this.config = { ...this.config, ...config };
-        localStorage.setItem('chatbotApiKey', this.config.apiKey);
-        localStorage.setItem('chatbotEndpoint', this.config.endpoint);
-        localStorage.setItem('chatbotDeploymentName', this.config.deploymentName);
-        localStorage.setItem('chatbotGeneralDeploymentName', this.config.generalDeploymentName || this.config.deploymentName);
-        localStorage.setItem('chatbotDrDeploymentName', this.config.drDeploymentName || this.config.deploymentName);
-        localStorage.setItem('chatbotApiVersion', this.config.apiVersion);
-        localStorage.setItem('chatbotReasoningEffort', this.config.reasoningEffort);
+        // Only save UI preferences (reasoning effort)
+        if (config.reasoningEffort) {
+            this.config.reasoningEffort = config.reasoningEffort;
+            localStorage.setItem('chatbotReasoningEffort', this.config.reasoningEffort);
+        }
         console.log('[Chatbot] Configuration saved');
     },
 
@@ -62,7 +50,8 @@ window.chatbotService = {
     },
 
     isConfigured: function () {
-        return !!(this.config.apiKey && this.config.endpoint);
+        // Backend handles API configuration
+        return true;
     },
 
     getTokenUsage: function () {
@@ -458,18 +447,22 @@ window.chatbotService = {
         `;
 
         try {
-            // Reuse your existing API config to fetch this narrative
-            const narrativeResponse = await fetch(`${this.config.endpoint}/openai/deployments/${this.config.deploymentName}/chat/completions?api-version=${this.config.apiVersion}`, {
+            // Call backend API for report generation
+            const narrativeResponse = await fetch('/api/chat/generate-report', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'api-key': this.config.apiKey },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    messages: [{ role: "system", content: analysisPrompt }],
+                    systemPrompt: analysisPrompt,
                     temperature: 0.7
                 })
             });
 
+            if (!narrativeResponse.ok) {
+                throw new Error('API request failed');
+            }
+
             const narrativeData = await narrativeResponse.json();
-            const expertNarrative = narrativeData.choices[0].message.content;
+            const expertNarrative = narrativeData.content;
 
             // 3. PUBLISHING AGENT (The 'Formatter')
             // Now we generate the physical PDF
@@ -1318,17 +1311,14 @@ Write naturally. Use paragraphs. Add structure only where it helps clarity.`;
             cleanEndpoint = cleanEndpoint.slice(0, -1);
         }
 
-        // Updated for Responses API
-        const endpoint = `${cleanEndpoint}/openai/v1/responses`;
+        // Call backend API instead of Azure directly
         // ---------------------------
 
-        // Prepare messages for Responses API "input" format
-        const inputMessages = conversationHistory.map(msg => ({
-            type: "message",
+        // Prepare messages for conversation history
+        const conversationMessages = conversationHistory.map(msg => ({
             role: msg.role,
             content: msg.content
         }));
-        inputMessages.push({ type: "message", role: "user", content: message });
 
         try {
             thoughts.push({
@@ -1340,33 +1330,22 @@ Write naturally. Use paragraphs. Add structure only where it helps clarity.`;
 
             console.log('[Chatbot] Making initial API call...');
 
-            // Build request body - use different params for reasoning models (GPT-5, o1, o3, etc.)
-            const isReasoning = this.isReasoningModel();
-            const requestBody = {
-                model: this.config.generalDeploymentName || this.config.deploymentName,
-                input: inputMessages,
-                instructions: this.getSystemPrompt(),
-                tools: this.getToolDefinitions(),
-                tool_choice: "auto",
-                temperature: isReasoning ? 1 : 0.5 // Reasoning models work best with temperature 1
-            };
-
-            if (isReasoning) {
-                requestBody.max_output_tokens = 16000; // max_tokens -> max_output_tokens
-                requestBody.reasoning_effort = this.config.reasoningEffort;
-                console.log(`[Chatbot] Using reasoning model with effort: ${this.config.reasoningEffort}`);
-            } else {
-                requestBody.max_output_tokens = 1500; // max_tokens -> max_output_tokens
-            }
-
-            const response = await fetch(endpoint, {
+            const response = await fetch('/api/chat/send', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'api-key': this.config.apiKey },
-                body: JSON.stringify(requestBody)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message,
+                    conversationHistory: conversationMessages,
+                    modelConfig: {
+                        deploymentType: 'general',
+                        reasoningEffort: this.config.reasoningEffort
+                    }
+                })
             });
 
             if (!response.ok) {
-                throw new Error(`API request failed: ${response.status} - ${await response.text()}`);
+                const errorData = await response.json();
+                throw new Error(`API request failed: ${response.status} - ${errorData.error || 'Unknown error'}`);
             }
 
             const data = await response.json();
@@ -1483,14 +1462,22 @@ Write naturally. Use paragraphs. Add structure only where it helps clarity.`;
                     finalRequestBody.max_output_tokens = 1500;
                 }
 
-                const finalResponse = await fetch(endpoint, {
+                const finalResponse = await fetch('/api/chat/follow-up', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'api-key': this.config.apiKey },
-                    body: JSON.stringify(finalRequestBody)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        inputMessages: finalRequestBody.input,
+                        tools: this.getToolDefinitions(),
+                        modelConfig: {
+                            deploymentType: 'general',
+                            reasoningEffort: this.config.reasoningEffort
+                        }
+                    })
                 });
 
                 if (!finalResponse.ok) {
-                    throw new Error(`Final API request failed: ${finalResponse.status} - ${await finalResponse.text()}`);
+                    const errorData = await finalResponse.json();
+                    throw new Error(`Final API request failed: ${finalResponse.status} - ${errorData.error || 'Unknown error'}`);
                 }
 
                 const finalData = await finalResponse.json();
@@ -1580,22 +1567,18 @@ Write naturally. Use paragraphs. Add structure only where it helps clarity.`;
         `;
 
         try {
-            // Updated to Responses API endpoint
-            const response = await fetch(`${this.config.endpoint}/openai/v1/responses`, {
+            // Call backend API
+            const response = await fetch('/api/chat/extract-philosophy', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'api-key': this.config.apiKey },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    model: this.config.deploymentName,
-                    input: [{ type: "message", role: "user", content: "Extract philosophy rules." }],
-                    instructions: prompt,
-                    temperature: 0.1, // Low temperature for deterministic JSON
-                    response_format: { type: "text" }
+                    pdfText: text.substring(0, 15000)
                 })
             });
 
             if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(`API request failed: ${response.status} - ${errText}`);
+                const errorData = await response.json();
+                throw new Error(`API request failed: ${response.status} - ${errorData.error || 'Unknown error'}`);
             }
 
             const data = await response.json();
@@ -1647,22 +1630,18 @@ Write naturally. Use paragraphs. Add structure only where it helps clarity.`;
         `;
 
         try {
-            // Updated to Responses API endpoint
-            const response = await fetch(`${this.config.endpoint}/openai/v1/responses`, {
+            // Call backend API
+            const response = await fetch('/api/chat/enrich-safety', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'api-key': this.config.apiKey },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    model: this.config.deploymentName,
-                    input: [{ type: "message", role: "user", content: "Extract safety data." }],
-                    instructions: prompt,
-                    temperature: 0.1,
-                    response_format: { type: "text" }
+                    safetyText: safetyText.substring(0, 20000)
                 })
             });
 
             if (!response.ok) {
-                const errText = await response.text();
-                throw new Error(`API request failed: ${response.status} - ${errText}`);
+                const errorData = await response.json();
+                throw new Error(`API request failed: ${response.status} - ${errorData.error || 'Unknown error'}`);
             }
 
             const data = await response.json();

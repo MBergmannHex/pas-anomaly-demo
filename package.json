@@ -1,0 +1,23 @@
+{
+  "name": "alarm-analyzer-pro",
+  "version": "5.0.0",
+  "description": "AI-Enhanced alarm rationalization for process control systems",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "nodemon server/server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "helmet": "^8.0.0",
+    "express-rate-limit": "^7.4.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

@@ -37,8 +37,7 @@
     <script src="services/chatbot-service.js"></script>
     <script src="services/dr-processor.js?v=6"></script>
 
-    <script src="openai-config.js"
-        onerror="console.log('No openai-config.js found, using manual configuration')"></script>
+    <!-- API configuration now handled server-side -->
 
     <style>
         /* Additional styles for chatbot and insights */
@@ -2579,7 +2578,7 @@
             // --- CHATBOT HANDLERS ---
             const handleChatSubmit = async (e) => {
                 e?.preventDefault();
-                if (!chatInput.trim() || !chatbotConfigured) return;
+                if (!chatInput.trim()) return;
 
                 const userMessage = {
                     id: Date.now(),
@@ -2856,7 +2855,7 @@
 
             // --- AI ANALYSIS LOGIC (FIXED) ---
             const analyzeGamePerformance = async () => {
-                if (!gameOverReport || !chatbotConfigured) return;
+                if (!gameOverReport) return;
 
                 setIsAnalyzingGame(true);
 
@@ -3631,10 +3630,10 @@
                                     <button onClick={() => setActiveTab('ai-rationalization')} className={`tab-button ${activeTab === 'ai-rationalization' ? 'active' : 'text-gray-600 hover:text-gray-800'}`}><i className="fas fa-robot mr-2"></i>AI Rationalization</button>
                                     <button
                                         onClick={() => setActiveTab('assistant')}
-                                        className={`tab-button ${activeTab === 'assistant' ? 'active' : 'text-gray-600 hover:text-gray-800'} ${!chatbotConfigured ? 'opacity-50' : ''}`}
+                                        className={`tab-button ${activeTab === 'assistant' ? 'active' : 'text-gray-600 hover:text-gray-800'}`}
                                     >
                                         <i className="fas fa-comments mr-2"></i>AI Assistant
-                                        {!chatbotConfigured && <span className="ml-1 text-xs bg-yellow-500 text-white px-1 rounded">Setup Required</span>}
+                                        {/* Backend handles configuration */}
                                     </button>
                                 </div>
 
@@ -4459,7 +4458,7 @@
                                                                 </div>
                                                             ) : (
                                                                 <div className="text-center py-8">
-                                                                    {chatbotConfigured ? (
+                                                                    {true ? (
                                                                         <button
                                                                             onClick={analyzeGamePerformance}
                                                                             disabled={isAnalyzingGame}
@@ -4472,7 +4471,7 @@
                                                                             )}
                                                                         </button>
                                                                     ) : (
-                                                                        <p className="text-gray-500">Configure Chatbot settings to enable AI analysis.</p>
+                                                                        <p className="text-gray-500">Backend is handling AI configuration.</p>
                                                                     )}
                                                                 </div>
                                                             )}
@@ -4894,61 +4893,8 @@
                                             <h2 className="text-2xl font-bold">AI Alarm Assistant</h2>
                                         </div>
 
-                                        {!chatbotConfigured ? (
-                                            <div className="card">
-                                                <h3 className="text-lg font-semibold mb-4">Configure AI Assistant</h3>
-                                                <p className="text-sm text-gray-600 mb-4">
-                                                    Please configure the Azure OpenAI settings to enable the AI assistant.
-                                                </p>
-                                                <div className="space-y-4">
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700">API Key</label>
-                                                        <input
-                                                            type="password"
-                                                            value={chatbotSettings.apiKey}
-                                                            onChange={(e) => setChatbotSettings({ ...chatbotSettings, apiKey: e.target.value })}
-                                                            className="w-full px-3 py-2 border rounded-md"
-                                                            placeholder="Your Azure OpenAI API Key"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700">Endpoint</label>
-                                                        <input
-                                                            type="text"
-                                                            value={chatbotSettings.endpoint}
-                                                            onChange={(e) => setChatbotSettings({ ...chatbotSettings, endpoint: e.target.value })}
-                                                            className="w-full px-3 py-2 border rounded-md"
-                                                            placeholder="https://your-resource.openai.azure.com"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700">Deployment Name</label>
-                                                        <input
-                                                            type="text"
-                                                            value={chatbotSettings.deploymentName}
-                                                            onChange={(e) => setChatbotSettings({ ...chatbotSettings, deploymentName: e.target.value })}
-                                                            className="w-full px-3 py-2 border rounded-md"
-                                                            placeholder="gpt-4"
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-700">API Version</label>
-                                                        <input
-                                                            type="text"
-                                                            value={chatbotSettings.apiVersion}
-                                                            onChange={(e) => setChatbotSettings({ ...chatbotSettings, apiVersion: e.target.value })}
-                                                            className="w-full px-3 py-2 border rounded-md"
-                                                        />
-                                                    </div>
-                                                    <button
-                                                        onClick={saveChatbotSettings}
-                                                        className="w-full bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700"
-                                                    >
-                                                        Save Configuration
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ) : (
+                                        {/* Chatbot is always configured - backend handles API */}
+                                        {(
                                             <div className="card p-0 h-[calc(100vh-300px)]">
                                                 <div className="chat-container">
                                                     {/* Chat Header with Clear Button */}

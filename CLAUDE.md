@@ -10,24 +10,31 @@ The application analyzes alarm databases (CSV), extracts philosophy rules from P
 
 ## Architecture
 
-This is a **browser-based single-page application** with no build process. All dependencies are loaded via CDN.
+**Full-stack application** with Node.js (Express) backend and browser-based SPA frontend.
 
-### Service-Oriented Architecture
+### Backend (server/)
 
-The application is structured around specialized service modules in `services/`:
+- **server.js** - Express server, serves static files, API routing
+- **services/openai-proxy.js** - Proxies all Azure OpenAI API calls (hides API key)
+- **routes/** - API endpoints for chat, D&R processing, control loop analysis
+- **middleware/** - Error handling, rate limiting
 
-- **dr-processor.js** (128KB) - Core D&R engine containing ISA 18.2 compliance logic, vendor-specific presets (Foxboro, Yokogawa, DeltaV, Wonderware, Honeywell, Emerson), alarm display name dictionary, and batch processing workflow
-- **chatbot-service.js** - Azure OpenAI integration with dual-model support (general chat + reasoning models like GPT-5/o1/o3)
-- **data-service.js** - CSV parsing, alarm database normalization, priority scheme detection
-- **session-service.js** - Event session extraction with multi-unit tracking
-- **rationalization-service.js** - Alarm rationalization workflow orchestration
-- **process-mining-service.js** - Process analysis and equipment relationship mapping
-- **ml-service.js** - Machine learning models using TensorFlow.js
-- **control-loop-service.js** - Control loop analysis and tuning recommendations
-- **stats-service.js** - Statistical analysis and reporting
-- **game-service.js** - Gamification features for alarm management training
+### Frontend (public/)
 
-All services are exposed via `window` global namespace (e.g., `window.drProcessor`, `window.chatbotService`).
+Service-oriented architecture with modules in `public/services/`:
+
+- **dr-processor.js** - Core D&R engine with ISA 18.2 compliance logic, vendor presets, alarm dictionary
+- **chatbot-service.js** - AI chat interface (calls backend `/api/chat/*`)
+- **data-service.js** - CSV parsing, alarm database normalization
+- **session-service.js** - Event session extraction
+- **rationalization-service.js** - Alarm rationalization workflow
+- **process-mining-service.js** - Process analysis and equipment mapping
+- **ml-service.js** - TensorFlow.js models (client-side)
+- **control-loop-service.js** - Control loop analysis
+- **stats-service.js** - Statistical analysis
+- **game-service.js** - Gamification features
+
+All frontend services use `window` global namespace. All Azure OpenAI calls route through backend.
 
 ## AI Rationalization Workflow
 
@@ -41,40 +48,59 @@ The core workflow is documented in [docs/AI_Rationalization_Workflow.md](docs/AI
 
 ### AI Model Configuration
 
-The app uses **Azure OpenAI** with two deployment slots:
-- `generalDeploymentName` - Standard chat/assistant (e.g., gpt-4.1)
-- `drDeploymentName` - D&R reasoning model (e.g., gpt-5, o1, o3) with configurable reasoning effort
+The backend uses **Azure OpenAI** with two deployment configurations:
+- `AZURE_OPENAI_GENERAL_DEPLOYMENT` - Standard chat/assistant (e.g., gpt-4.1)
+- `AZURE_OPENAI_DR_DEPLOYMENT` - D&R reasoning model (e.g., gpt-5, o1, o3)
 
-Configuration is stored in `openai-config.js` and localStorage.
+API credentials are stored server-side in `.env` (local) or Azure App Service environment variables (production).
 
 ## Running the Application
 
-**No build required** - simply open [index.html](index.html) in a browser or serve with:
+### Local Development
 
-```bash
-python -m http.server 8000
-# or
-npx http-server -p 8000
-```
+1. **Set up environment variables:**
+   ```bash
+   cp .env.template .env
+   # Edit .env with your Azure OpenAI credentials
+   ```
 
-Then navigate to `http://localhost:8000`
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Start the server:**
+   ```bash
+   npm start
+   # or for development with auto-reload:
+   npm run dev
+   ```
+
+4. **Navigate to:** `http://localhost:8080`
+
+### Azure Deployment
+
+The app is configured for Azure App Service with:
+- **web.config** - IIS/iisnode configuration
+- **Environment variables** - Set in Azure Portal under Configuration
+- **Deployment** - Git push, GitHub Actions, or Azure CLI
 
 ## Configuration
 
 ### Azure OpenAI Setup
 
-Edit [openai-config.js](openai-config.js):
+Edit `.env` file (local development):
 
-```javascript
-window.OPENAI_CONFIG = {
-    apiKey: 'YOUR_AZURE_OPENAI_API_KEY_HERE',
-    endpoint: 'https://YOUR-RESOURCE.openai.azure.com',
-    deploymentName: 'gpt-4.1',
-    apiVersion: '2024-02-15-preview'
-};
+```bash
+AZURE_OPENAI_API_KEY=your_api_key_here
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
+AZURE_OPENAI_GENERAL_DEPLOYMENT=gpt-4.1
+AZURE_OPENAI_DR_DEPLOYMENT=gpt-5
+AZURE_OPENAI_API_VERSION=2025-03-01-preview
+AZURE_OPENAI_REASONING_EFFORT=medium
 ```
 
-**CRITICAL**: Never commit actual API keys. The file is tracked but should contain placeholder values only.
+**CRITICAL**: Never commit `.env` file (already in `.gitignore`). For Azure deployment, set these as App Service environment variables.
 
 ### Priority Schemes
 

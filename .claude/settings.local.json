@@ -2,7 +2,17 @@
   "permissions": {
     "allow": [
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh auth status:*)",
+      "Bash(gh auth login:*)",
+      "Bash(git branch:*)",
+      "Bash(gh repo create:*)",
+      "Bash(git rm:*)",
+      "Bash(git push)",
+      "Bash(npm install)",
+      "Bash(npm start)",
+      "Bash(curl:*)"
     ]
   }
 }

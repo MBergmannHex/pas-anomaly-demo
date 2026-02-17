@@ -1,12 +1,6 @@
 // Global namespace for Control Loop Performance Monitoring (CLPM) service
 window.controlLoopService = {
-    // Configuration matches chatbot service to reuse credentials
-    config: {
-        apiKey: localStorage.getItem('chatbotApiKey') || '',
-        endpoint: localStorage.getItem('chatbotEndpoint') || '',
-        deploymentName: localStorage.getItem('chatbotDeploymentName') || 'gpt-4',
-        apiVersion: localStorage.getItem('chatbotApiVersion') || '2024-02-15-preview'
-    },
+    // No config needed - backend handles API calls
 
     /**
      * Main Entry Point: Analyzes a specific tag across provided sessions for control loop performance issues.
@@ -113,39 +107,42 @@ window.controlLoopService = {
     _extractValuesWithLLM: async function (tag, logEntries) {
         console.log(`[ControlLoop] sending ${logEntries.length} logs to LLM for value extraction`);
 
-        const systemPrompt = `You are a Control Loop Data Parser. 
+        const systemPrompt = `You are a Control Loop Data Parser.
         Your ONLY job is to extract numerical changes from log messages for loop "${tag}".
-        
+
         Look for:
         1. Set Point (SP) changes (e.g., "SP changed to 50", "Set 50.5", "Tag: ${tag} SP")
         2. Output (OP) changes (e.g., "Output 10%", "Manual 55", "Tag: ${tag} CV")
         3. Mode changes (e.g., "Auto to Manual")
-        
+
         Return a raw JSON array ONLY. No markdown, no explanation.
         Format: [{"timestamp": number, "type": "SP"|"OP"|"MODE", "old_val": number|null, "new_val": number|string}]
-        
+
         If a log entry has no relevant control change, ignore it.`;
 
         const userPrompt = `Analyze these logs:\n${logEntries.map(e => e.text).join('\n')}`;
 
         try {
-            // Updated to Responses API endpoint
-            const response = await fetch(`${this.config.endpoint}/openai/v1/responses`, {
+            // Call backend API instead of Azure directly
+            const response = await fetch('/api/control-loop/extract', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'api-key': this.config.apiKey },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    model: this.config.deploymentName,
-                    input: [{ type: "message", role: "user", content: userPrompt }],
-                    instructions: systemPrompt,
-                    temperature: 0, // Deterministic output desired
-                    max_output_tokens: 1000,
-                    response_format: { type: "text" }
+                    systemPrompt,
+                    userPrompt,
+                    maxOutputTokens: 1000,
+                    temperature: 0
                 })
             });
 
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'API request failed');
+            }
+
             const data = await response.json();
 
-            // Updated response parsing
+            // Updated response parsing - backend returns { output, usage }
             const messageOutput = data.output.find(item => item.type === 'message');
             const textContent = messageOutput ? messageOutput.content.find(c => c.type === 'output_text') : null;
             let content = textContent ? textContent.text : '';

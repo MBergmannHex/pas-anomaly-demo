@@ -914,38 +914,31 @@ Respond with ONLY a JSON object:
         ];
 
         try {
-            const requestBody = this.buildApiRequestBody(testMessages, { maxTokens: 50 });
+            console.log('[API Test] Testing connection via backend...');
 
-            console.log('[API Test] Testing connection to:', endpoint);
-            console.log('[API Test] Request body:', JSON.stringify(requestBody, null, 2));
-
-            const response = await fetch(endpoint, {
+            const response = await fetch('/api/test-connection', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'api-key': window.chatbotService.config.apiKey
-                },
-                body: JSON.stringify(requestBody)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ deploymentType: 'dr' })
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('[API Test] Failed:', response.status, errorText);
+                const errorData = await response.json();
+                console.error('[API Test] Failed:', response.status, errorData);
                 return {
                     success: false,
-                    message: `API request failed: ${response.status} - ${errorText}`,
+                    message: `API request failed: ${response.status} - ${errorData.error || 'Unknown error'}`,
                     status: response.status
                 };
             }
 
             const data = await response.json();
-            const content = data.choices?.[0]?.message?.content || '';
 
-            console.log('[API Test] Response:', content);
+            console.log('[API Test] Response:', data);
 
             return {
                 success: true,
-                message: `API connection successful. Model: ${window.chatbotService.config.drDeploymentName || window.chatbotService.config.deploymentName}`,
+                message: data.message,
                 modelInfo: {
                     deployment: window.chatbotService.config.drDeploymentName || window.chatbotService.config.deploymentName,
                     isReasoning: this.isReasoningModel(),
@@ -1530,71 +1523,33 @@ ${safeSampleAlarms}
             }
         ];
 
-        // Use Global Responses API endpoint (v1 style)
-        // Azure OpenAI pattern for new global features often omits deployment ID from URL
-        const responsesEndpoint = `${window.chatbotService.config.endpoint}/openai/v1/responses`;
-
-        const modelName = window.chatbotService.config.drDeploymentName || window.chatbotService.config.deploymentName;
-
-        // Define tools - NO web search for this first step
-        const tools = [];
-
-        const requestBody = {
-            model: modelName,
-            input: inputMessages,  // ✅ Correct - Responses API format
-            instructions: systemInstructions,  // ✅ System prompt goes here
-            tools: tools,
-            temperature: 0.2,  // Add temperature control
-            max_output_tokens: 32000  // User requested 32k. NOTE: This might exceed context limits.
-        };
-
+        // Call backend API (retry logic handled server-side)
         let response;
         try {
-            response = await fetch(responsesEndpoint, {
+            response = await fetch('/api/dr/analyze-process', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'api-key': window.chatbotService.config.apiKey
-                },
-                body: JSON.stringify(requestBody)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userPrompt: userContent.type ? userContent : (typeof userContent === 'string' ? userContent : JSON.stringify(userContent)),
+                    systemInstructions: systemInstructions,
+                    pidImageBase64: pidImageBase64,
+                    modelConfig: {
+                        deploymentType: 'dr',
+                        reasoningEffort: window.chatbotService.config.reasoningEffort
+                    },
+                    maxOutputTokens: 32000
+                })
             });
 
             if (!response.ok) {
-                const errorBody = await response.text();
-                // Check for context length or parameter errors to retry
-                if (response.status === 400 && (errorBody.includes('context_length_exceeded') || errorBody.includes('max_tokens'))) {
-                    console.warn('Process Analysis: 32k token limit failed, retrying with 4k limit...', errorBody);
-
-                    // Retry with safe 4k limit
-                    requestBody.max_output_tokens = 4096;
-                    response = await fetch(responsesEndpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'api-key': window.chatbotService.config.apiKey
-                        },
-                        body: JSON.stringify(requestBody)
-                    });
-                } else {
-                    // Check retry response or original non-400 error
-                    if (!response.ok) {
-                        const finalError = response.status === 400 ? await response.text() : errorBody;
-                        console.error('API Error Details:', finalError);
-                        throw new Error(`Process analysis API request failed: ${response.status} - ${finalError}`);
-                    }
-                }
+                const errorData = await response.json();
+                throw new Error(`Process analysis API request failed: ${response.status} - ${errorData.error || 'Unknown error'}`);
             }
         } catch (e) {
             throw e; // Re-throw to be caught by outer handler
         }
 
-        if (!response.ok) {
-            // Should be caught above, but safety check
-            const errorBody = await response.text();
-            throw new Error(`Process analysis API request failed: ${response.status} - ${errorBody}`);
-        }
-
-        // Responses API returns an object with an 'output' array
+        // Parse response from backend
         const responseData = await response.json();
 
         // Find the message output
@@ -1710,18 +1665,22 @@ Return a merged, enriched JSON object with the SAME structure as the input, but 
         };
 
         try {
-            const response = await fetch(responsesEndpoint, {
+            const response = await fetch('/api/dr/web-search', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'api-key': window.chatbotService.config.apiKey
-                },
-                body: JSON.stringify(requestBody)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userPrompt: userPrompt,
+                    modelConfig: {
+                        deploymentType: 'dr',
+                        reasoningEffort: window.chatbotService.config.reasoningEffort
+                    },
+                    maxOutputTokens: 128000
+                })
             });
 
             if (!response.ok) {
-                const text = await response.text();
-                console.error('[DrProcessor] Web Search Step Failed:', text);
+                const errorData = await response.json();
+                console.error('[DrProcessor] Web Search Step Failed:', errorData);
                 // Return initial analysis if step 2 fails, effectively skipping it
                 return {
                     ...initialAnalysis,
@@ -1874,39 +1833,29 @@ Return a merged, enriched JSON object with the SAME structure as the input, but 
      * Extract philosophy rules using LLM
      */
     async extractPhilosophyRules(pdfFile) {
-        if (!window.chatbotService.isConfigured()) {
-            throw new Error('Azure OpenAI is not configured. Please configure it in Settings.');
-        }
-
         // Extract text from PDF
         const pdfText = await this.extractPdfText(pdfFile);
 
-        // Send to LLM for rule extraction
-        const endpoint = `${window.chatbotService.config.endpoint}/openai/deployments/${window.chatbotService.config.drDeploymentName || window.chatbotService.config.deploymentName}/chat/completions?api-version=${window.chatbotService.config.apiVersion}`;
-
-        const messages = [
-            { role: 'system', content: this.systemPrompts.philosophyExtractor },
-            { role: 'user', content: `Extract alarm philosophy rules from this document:\n\n${pdfText}` }
-        ];
-
-        const requestBody = this.buildApiRequestBody(messages, { maxTokens: 32000, temperature: 0.2 });
-
-        const response = await fetch(endpoint, {
+        // Call backend API for philosophy extraction
+        const response = await fetch('/api/dr/extract-philosophy', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'api-key': window.chatbotService.config.apiKey
-            },
-            body: JSON.stringify(requestBody)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                pdfText: pdfText,
+                modelConfig: {
+                    deploymentType: 'dr',
+                    reasoningEffort: window.chatbotService.config.reasoningEffort
+                }
+            })
         });
 
         if (!response.ok) {
-            const errText = await response.text();
-            throw new Error(`API request failed: ${response.status} - ${errText}`);
+            const errorData = await response.json();
+            throw new Error(`API request failed: ${response.status} - ${errorData.error || 'Unknown error'}`);
         }
 
         const data = await response.json();
-        let content = data.choices[0].message.content;
+        let content = data.content;
 
         // Robust JSON Extraction
         content = content.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
@@ -2291,27 +2240,28 @@ CRITICAL REASONING REQUIREMENTS:
             };
         }
 
-        const endpoint = `${window.chatbotService.config.endpoint}/openai/deployments/${window.chatbotService.config.drDeploymentName || window.chatbotService.config.deploymentName}/chat/completions?api-version=${window.chatbotService.config.apiVersion}`;
-
-        // Use buildApiRequestBody for GPT-5 compatibility
-        // Lower temperature (0.2) for consistency - same alarm types should get same attributes
-        const requestBody = this.buildApiRequestBody(messages, { maxTokens: 32000, temperature: 0.2 });
-
-        const response = await fetch(endpoint, {
+        // Call backend API for batch rationalization
+        const response = await fetch('/api/dr/batch-rationalize', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'api-key': window.chatbotService.config.apiKey
-            },
-            body: JSON.stringify(requestBody)
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                messages: messages,
+                modelConfig: {
+                    deploymentType: 'dr',
+                    reasoningEffort: window.chatbotService.config.reasoningEffort
+                },
+                maxTokens: 32000,
+                temperature: 0.2
+            })
         });
 
         if (!response.ok) {
-            throw new Error(`API request failed: ${response.status}`);
+            const errorData = await response.json();
+            throw new Error(`API request failed: ${response.status} - ${errorData.error || 'Unknown error'}`);
         }
 
         const data = await response.json();
-        let content = data.choices[0].message.content;
+        let content = data.content;
         content = content.replace(/```json/g, '').replace(/```/g, '').trim();
 
         const drafts = JSON.parse(content);
