@@ -10,9 +10,9 @@ module.exports = {
         apiKey: process.env.AZURE_OPENAI_API_KEY,
         endpoint: process.env.AZURE_OPENAI_ENDPOINT,
         generalDeployment: process.env.AZURE_OPENAI_GENERAL_DEPLOYMENT || 'gpt-4.1',
-        drDeployment: process.env.AZURE_OPENAI_DR_DEPLOYMENT || 'gpt-5',
-        apiVersion: process.env.AZURE_OPENAI_API_VERSION || '2025-03-01-preview',
-        defaultReasoningEffort: process.env.AZURE_OPENAI_REASONING_EFFORT || 'medium'
+        drDeployment: process.env.AZURE_OPENAI_DR_DEPLOYMENT || 'gpt-5.2',
+        apiVersion: process.env.AZURE_OPENAI_API_VERSION || '2024-12-01-preview',
+        defaultReasoningEffort: process.env.AZURE_OPENAI_REASONING_EFFORT || 'low'
     },
     server: {
         port: process.env.PORT || 8080,

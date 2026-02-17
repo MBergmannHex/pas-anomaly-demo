@@ -3,7 +3,7 @@ window.chatbotService = {
     config: {
         // API key and endpoint are now handled server-side
         // These are kept for UI preferences only
-        reasoningEffort: 'medium' // For GPT-5/o-series models: 'low', 'medium', 'high', 'xhigh'
+        reasoningEffort: 'low' // For GPT-5/o-series models: 'low', 'medium', 'high', 'xhigh'
     },
 
     // Detect if a deployment name is a reasoning model (GPT-5, o1, o3, etc.)
@@ -29,7 +29,7 @@ window.chatbotService = {
     initialize: function () {
         console.log('[Chatbot] Initializing service...');
         // Only load UI preferences (reasoning effort)
-        this.config.reasoningEffort = localStorage.getItem('chatbotReasoningEffort') || 'medium';
+        this.config.reasoningEffort = localStorage.getItem('chatbotReasoningEffort') || 'low';
         console.log('[Chatbot] Configuration loaded');
     },
 

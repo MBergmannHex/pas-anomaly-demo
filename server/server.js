@@ -37,7 +37,7 @@ app.use('/api/', rateLimiter);
 
 // API routes
 app.use('/api', require('./routes/health'));
-app.use('/api', require('./routes/dr-process'));  // Includes /api/test-connection
+app.use('/api/dr', require('./routes/dr-process'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/control-loop', require('./routes/control-loop'));
 
