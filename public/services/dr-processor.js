@@ -1873,24 +1873,7 @@ Return a merged, enriched JSON object with the SAME structure as the input, but 
         try {
             const rules = JSON.parse(content);
             console.log('Extracted philosophy rules:', rules);
-
-            // Normalize the response to match expected UI format
-            // Transform priority_matrix_rules → priority_matrix
-            const normalized = {
-                ...rules,
-                priority_matrix: rules.priority_matrix ||
-                    (rules.priority_matrix_rules?.priority_determination_matrix ?
-                        Object.entries(rules.priority_matrix_rules.priority_determination_matrix).map(([timeRange, severities]) => ({
-                            time_range: timeRange,
-                            ...severities
-                        })) : []),
-                severity_matrix: rules.severity_matrix ||
-                    (rules.priority_matrix_rules?.consequence_severity_basis ?
-                        [rules.priority_matrix_rules.consequence_severity_basis] : [])
-            };
-
-            console.log('Normalized philosophy rules:', normalized);
-            return normalized;
+            return rules;
         } catch (e) {
             console.error('Philosophy JSON parse error:', e);
             console.log('Raw content:', content);

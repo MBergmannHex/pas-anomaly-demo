@@ -113,7 +113,63 @@ router.post('/extract-philosophy', async (req, res, next) => {
         const messages = [
             {
                 role: 'system',
-                content: 'You are an alarm management expert. Extract structured alarm philosophy rules from the provided document text.'
+                content: `You are an alarm management expert specializing in ISA 18.2, IEC 62682, and EEMUA 191 standards.
+Extract structured alarm philosophy rules from the provided document.
+
+Output MUST be valid JSON with this exact structure:
+{
+  "document": {
+    "title": "...",
+    "site": "...",
+    "date": "...",
+    "vendor_system": "..."
+  },
+  "priority_matrix": [
+    {
+      "time_range": "<3 min",
+      "minor": "High",
+      "major": "Emergency",
+      "severe": "Emergency"
+    },
+    {
+      "time_range": "3-10 min",
+      "minor": "Low",
+      "major": "High",
+      "severe": "High"
+    },
+    {
+      "time_range": "10-30 min",
+      "minor": "Low",
+      "major": "Low",
+      "severe": "High"
+    },
+    {
+      "time_range": ">30 min",
+      "minor": "No Alarm",
+      "major": "No Alarm",
+      "severe": "No Alarm"
+    }
+  ],
+  "severity_matrix": [
+    {
+      "category": "consequence_severity_basis",
+      "rule": "Use worst-case severity across Personnel, Public/Environment, Plant Equipment/Production Loss",
+      "minor": "Minor injury, <$10k loss, minor environmental impact",
+      "major": "Lost time injury, $10k-$100k loss, reportable environmental impact",
+      "severe": "Serious injury/fatality, >$100k loss, serious environmental impact"
+    }
+  ],
+  "rules": [
+    {
+      "id": "ALM-001",
+      "category": "...",
+      "rule": "...",
+      "source": ["Section X.Y"]
+    }
+  ]
+}
+
+Return ONLY the JSON object. Do not include markdown code blocks.`
             },
             {
                 role: 'user',
