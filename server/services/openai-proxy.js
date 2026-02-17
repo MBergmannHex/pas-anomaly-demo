@@ -116,15 +116,10 @@ class OpenAIProxy {
         const isReasoning = this.isReasoningModel(deployment);
         const reasoningEffort = options.reasoningEffort || this.defaultReasoningEffort;
 
-        // Convert input array (Responses API format) to messages array (Chat Completions format)
-        // Input format: [{ type: 'message', role: 'user', content: '...' }]
-        // Messages format: [{ role: 'user', content: '...' }]
-        const messages = input.map(item => ({
-            role: item.role,
-            content: item.content
-        }));
-
-        const body = { messages };
+        const body = {
+            model: deployment,
+            input: input
+        };
 
         // Add reasoning effort for reasoning models
         if (isReasoning) {
@@ -133,20 +128,19 @@ class OpenAIProxy {
             body.temperature = options.temperature;
         }
 
-        // Add token limit - reasoning models use max_completion_tokens
+        // Add max_output_tokens (Responses API uses this parameter name)
         if (options.maxOutputTokens) {
-            if (isReasoning) {
-                body.max_completion_tokens = options.maxOutputTokens;
-            } else {
-                body.max_tokens = options.maxOutputTokens;
-            }
+            body.max_output_tokens = options.maxOutputTokens;
         }
 
-        // Note: tools parameter not supported in this wrapper (web_search handled separately)
+        // Add tools if specified (e.g., web_search)
+        if (options.tools) {
+            body.tools = options.tools;
+        }
 
-        const url = `${this.endpoint}/openai/deployments/${deployment}/chat/completions?api-version=${this.apiVersion}`;
+        const url = `${this.endpoint}/openai/v1/responses`;
 
-        console.log(`[OpenAI] Responses API (using Chat Completions) - Model: ${deployment}, Reasoning: ${isReasoning}`);
+        console.log(`[OpenAI] Responses API - Model: ${deployment}, Reasoning: ${isReasoning}`);
 
         const response = await fetch(url, {
             method: 'POST',
@@ -178,16 +172,9 @@ class OpenAIProxy {
 
         const data = await response.json();
 
-        // Convert Chat Completions response to Responses API format for compatibility
+        // Response is already in Responses API format
         return {
-            output: [{
-                type: 'message',
-                role: 'assistant',
-                content: [{
-                    type: 'output_text',
-                    text: data.choices?.[0]?.message?.content || ''
-                }]
-            }],
+            output: data.output || [],
             usage: data.usage || {}
         };
     }
