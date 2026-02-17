@@ -13,14 +13,19 @@ const rateLimiter = require('./middleware/rate-limiter');
 
 const app = express();
 
-// Security middleware
-app.use(helmet({
-    contentSecurityPolicy: false  // Disabled because frontend loads many CDN scripts
+// CORS configuration - MUST come before helmet
+app.use(cors({
+    origin: config.server.corsOrigin,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// CORS configuration
-app.use(cors({
-    origin: config.server.corsOrigin
+// Security middleware
+app.use(helmet({
+    contentSecurityPolicy: false,  // Disabled because frontend loads many CDN scripts
+    crossOriginEmbedderPolicy: false,  // Disable to allow cross-origin requests
+    crossOriginResourcePolicy: { policy: "cross-origin" }  // Allow cross-origin resources
 }));
 
 // Body parsing with high limit for P&ID images + PDF text
