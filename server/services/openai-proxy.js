@@ -56,9 +56,13 @@ class OpenAIProxy {
             body.temperature = options.temperature !== undefined ? options.temperature : 0.7;
         }
 
-        // Add other parameters
+        // Add token limit - reasoning models use max_completion_tokens instead of max_tokens
         if (options.maxTokens) {
-            body.max_tokens = options.maxTokens;
+            if (isReasoning) {
+                body.max_completion_tokens = options.maxTokens;
+            } else {
+                body.max_tokens = options.maxTokens;
+            }
         }
 
         return body;
