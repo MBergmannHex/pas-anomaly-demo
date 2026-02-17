@@ -126,37 +126,126 @@ Output MUST be valid JSON with this exact structure:
   },
   "priority_matrix": [
     {
-      "time_range": "<3 min",
-      "minor": "High",
-      "major": "Emergency",
-      "severe": "Emergency"
+      "severity": "Minor",
+      "max_response_time": ">30 minutes",
+      "priority": "No Alarm"
     },
     {
-      "time_range": "3-10 min",
-      "minor": "Low",
-      "major": "High",
-      "severe": "High"
+      "severity": "Major",
+      "max_response_time": ">30 minutes",
+      "priority": "No Alarm"
     },
     {
-      "time_range": "10-30 min",
-      "minor": "Low",
-      "major": "Low",
-      "severe": "High"
+      "severity": "Severe",
+      "max_response_time": ">30 minutes",
+      "priority": "No Alarm"
     },
     {
-      "time_range": ">30 min",
-      "minor": "No Alarm",
-      "major": "No Alarm",
-      "severe": "No Alarm"
+      "severity": "Minor",
+      "max_response_time": "10 to 30 minutes",
+      "priority": "Low"
+    },
+    {
+      "severity": "Major",
+      "max_response_time": "10 to 30 minutes",
+      "priority": "Low"
+    },
+    {
+      "severity": "Severe",
+      "max_response_time": "10 to 30 minutes",
+      "priority": "High"
+    },
+    {
+      "severity": "Minor",
+      "max_response_time": "3 to 10 minutes",
+      "priority": "Low"
+    },
+    {
+      "severity": "Major",
+      "max_response_time": "3 to 10 minutes",
+      "priority": "High"
+    },
+    {
+      "severity": "Severe",
+      "max_response_time": "3 to 10 minutes",
+      "priority": "High"
+    },
+    {
+      "severity": "Minor",
+      "max_response_time": "<3 minutes",
+      "priority": "High"
+    },
+    {
+      "severity": "Major",
+      "max_response_time": "<3 minutes",
+      "priority": "Emergency"
+    },
+    {
+      "severity": "Severe",
+      "max_response_time": "<3 minutes",
+      "priority": "Emergency"
     }
   ],
   "severity_matrix": [
     {
-      "category": "consequence_severity_basis",
-      "rule": "Use worst-case severity across Personnel, Public/Environment, Plant Equipment/Production Loss",
-      "minor": "Minor injury, <$10k loss, minor environmental impact",
-      "major": "Lost time injury, $10k-$100k loss, reportable environmental impact",
-      "severe": "Serious injury/fatality, >$100k loss, serious environmental impact"
+      "impact_category": "Personnel",
+      "severity": "NONE",
+      "entry": "No injury or health effect"
+    },
+    {
+      "impact_category": "Personnel",
+      "severity": "MINOR",
+      "entry": "Minor injury (first aid)"
+    },
+    {
+      "impact_category": "Personnel",
+      "severity": "MAJOR",
+      "entry": "Lost time injury"
+    },
+    {
+      "impact_category": "Personnel",
+      "severity": "SEVERE",
+      "entry": "Serious injury or fatality"
+    },
+    {
+      "impact_category": "Environment",
+      "severity": "NONE",
+      "entry": "No environmental impact"
+    },
+    {
+      "impact_category": "Environment",
+      "severity": "MINOR",
+      "entry": "Minor release, contained on-site"
+    },
+    {
+      "impact_category": "Environment",
+      "severity": "MAJOR",
+      "entry": "Reportable environmental release"
+    },
+    {
+      "impact_category": "Environment",
+      "severity": "SEVERE",
+      "entry": "Serious environmental damage"
+    },
+    {
+      "impact_category": "Financial",
+      "severity": "NONE",
+      "entry": "Negligible loss"
+    },
+    {
+      "impact_category": "Financial",
+      "severity": "MINOR",
+      "entry": "Loss <$10k"
+    },
+    {
+      "impact_category": "Financial",
+      "severity": "MAJOR",
+      "entry": "Loss $10k-$100k"
+    },
+    {
+      "impact_category": "Financial",
+      "severity": "SEVERE",
+      "entry": "Loss >$100k"
     }
   ],
   "rules": [
