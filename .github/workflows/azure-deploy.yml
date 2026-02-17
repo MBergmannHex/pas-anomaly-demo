@@ -25,9 +25,23 @@ jobs:
     - name: npm install
       run: npm install
 
-    - name: Deploy to Azure Web App
-      id: deploy-to-webapp
-      uses: azure/webapps-deploy@v3
+    - name: Create deployment package
+      run: |
+        tar -czf deploy.tar.gz \
+          --exclude=.git \
+          --exclude=.github \
+          --exclude=node_modules/.cache \
+          --exclude='*.md' \
+          .
+
+    - name: Azure Login via Azure CLI
+      uses: azure/login@v1
       with:
-        app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Deploy to Azure Web App using Azure CLI
+      run: |
+        az webapp deployment source config-zip \
+          --resource-group AIC-Lab \
+          --name ${{ env.AZURE_WEBAPP_NAME }} \
+          --src deploy.tar.gz
