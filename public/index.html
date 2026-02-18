@@ -3285,7 +3285,9 @@
                                 <div className="flex items-center space-x-3">
                                     <img src="octave-logo.svg" alt="Octave" className="h-7 brightness-0 invert" style={{ width: 'auto' }} />
                                     <h1 className="text-xl font-bold">Alarm Analyzer Pro</h1>
-                                    <span className="text-purple-200 text-sm hidden sm:inline">AI-Enhanced Process Mining</span>
+                                    <span className="text-purple-200 text-sm hidden sm:inline">
+                                        {appMode === 'analysis' ? 'AI-Enhanced Process Mining' : 'AI-Powered Alarm Rationalization'}
+                                    </span>
                                 </div>
                                 <div className="flex items-center space-x-2">
                                     {/* Theme Toggle */}

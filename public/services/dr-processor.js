@@ -2505,8 +2505,8 @@ CRITICAL REASONING REQUIREMENTS:
 
     exportToCSV(data, filename = 'rationalized_madb.csv') {
         const csv = Papa.unparse(data.map(row => {
-            const { _index, _isComplete, _originalIndex, _propagatedFrom, _aiDrafted, _draftDetails, _fullAlarmName, ...cleanRow } = row;
-            // Remove any _propagated_* fields
+            const { _index, _isComplete, _originalIndex, _propagatedFrom, _aiDrafted, _draftDetails, _fullAlarmName, 'Max Time to Respond': maxTimeToRespond, ...cleanRow } = row;
+            // Remove any _propagated_* fields and the duplicate "Max Time to Respond" column
             Object.keys(cleanRow).forEach(k => {
                 if (k.startsWith('_propagated_')) delete cleanRow[k];
             });
