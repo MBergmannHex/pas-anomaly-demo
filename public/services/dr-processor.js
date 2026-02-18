@@ -309,38 +309,27 @@ window.drProcessor = {
         const validExamples = examples.filter(e => e.tag && e.prefix);
         if (validExamples.length === 0) return null;
 
-        const examplesText = validExamples.map(e => `Tag: "${e.tag}" -> Prefix: "${e.prefix}"`).join('\n');
-
-        const prompt = `
-You are a Regex expert. I have a list of alarm tags and the desired prefix to extract for grouping.
-Your task is to write a single JavaScript Regular Expression that can extract these prefixes from the tags.
-
-Examples:
-${examplesText}
-
-Requirements:
-1. The regex must have exactly one capturing group that captures the prefix.
-2. It must work for ALL the provided examples.
-3. Be robust but concise.
-4. If a clear pattern exists (e.g., "letters before the first digit", "everything before the first dash"), target that pattern.
-5. If the examples are "XIL5705 -> XIL" and "TI0199 -> TI", a good regex is "^([A-Za-z]+)".
-6. If the examples are "10-FI-001 -> FI", a good regex might be "(?:^|[-_])([A-Za-z]+)(?:[-_])".
-
-Respond with ONLY a JSON object:
-{
-  "regex": "YOUR_REGEX_PATTERN_HERE",
-  "description": "Short explanation of what it extracts"
-}
-`;
-
         try {
-            console.log('[DrProcessor] Requesting AI Rule Derivation...');
-            // Use the general chat model for this logical task, it's usually faster/cheaper than the D&R reasoning model
-            // and sufficient for Regex generation.
-            const response = await window.chatbotService.sendMessage(prompt);
+            console.log('[DrProcessor] Requesting AI Rule Derivation via /api/dr/derive-regex...');
+
+            // Call backend API for regex derivation (backend constructs the prompt)
+            const response = await fetch('/api/dr/derive-regex', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    examples: validExamples
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`API request failed: ${response.status} - ${errorData.error || 'Unknown error'}`);
+            }
+
+            const data = await response.json();
 
             // Clean response: remove markdown code blocks and HTML tags if present
-            let jsonStr = response.text;
+            let jsonStr = data.content;
 
             // 1. Handle Markdown
             if (jsonStr.includes('```json')) {
@@ -1160,296 +1149,6 @@ Respond with ONLY a JSON object:
     },
 
 
-    // ============================================
-    // SYSTEM PROMPTS
-    // ============================================
-
-    systemPrompts: {
-        // Philosophy Extractor - extracts rules from philosophy document
-        philosophyExtractor: `You are an expert Industrial Safety Engineer specializing in ISA-18.2 and IEC 62682 alarm management standards.
-
-You will be provided with the TEXT CONTENT of an Alarm Philosophy document (converted from PDF).
-
-Your task is to extract ALL configuration rules into strict JSON format.
-
-EXTRACT:
-1. Priority Matrix - how severity and consequence combine to determine priority including the maximum time to respond for that priority
-2. Severity Matrix - definition of severity levels (minor, major, severe, etc.) for each impact category
-3. Forbidden Combinations - any explicitly prohibited configurations
-4. Default Values - any default settings mentioned
-
-Output ONLY valid JSON (no markdown, no explanation):
-{
-  "priority_matrix": [
-    {"severity": "Minor", "priority": "Priority 3", "max_time_to_respond": "30 minutes"},
-    {"severity": "Major", "priority": "Priority 2", "max_time_to_respond": "10 minutes"},
-    {"severity": "Severe", "priority": "Priority 1", "max_time_to_respond": "3 minutes"}
-  ],
-  "severity_matrix": [
-    {"impact_category": "Personnel", "severity": "Minor", "entry": "First aid injury"},
-    {"impact_category": "Personnel", "severity": "Major", "entry": "Lost time injury"},
-    {"impact_category": "Environmental", "severity": "Major", "entry": "Release > RQ"}
-  ],
-  "forbidden_combinations": [
-    "Safety Critical alarms cannot be Low priority",
-    "Environmental alarms with Major severity must be High or Critical"
-  ],
-  "default_values": {
-    "default_priority": "Medium",
-    "default_response_time": "30 minutes"
-  }
-}
-`,
-
-        // Batch D&R Drafter - Comprehensive Vendor-Specific Prompt (ISA 18.2 / IEC 62682)
-        batchDrafter: `You are an expert Alarm Management Facilitator and Senior Process Engineer specializing in Alarm Documentation and Rationalization (D&R). Your goal is to ensure the safety and efficiency of industrial operations. Lives depend on the accuracy of your analysis.
-
-Your task is to analyze the provided alarm tags and produce a rationalized configuration as strictly formatted JSON output.
-
-### 1. GENERAL D&R RULES (Apply to all)
-* **The "Action" Rule:** An alarm MUST require a specific operator action to avoid a consequence. If no action is required, or if the action is only to "monitor," it is NOT an alarm (classify as "Journal" or "Log").
-* **The "Urgency" Rule:** If the operator does not need to act for >30 minutes, it is likely not an alarm.
-* **Duplicates:** Do not allow multiple alarms for the same abnormal condition (e.g., PV HIGH alarms on multiple, related Temperature sensors). Choose the one most relevant to the operator's corrective action.
-* **Causes:** Describe the abnormal process or equipment condition that can result in this alarm. Do not describe the alarm type.
-
-### 2. COMBINATION ALARMS (High-High / Low-Low)
-Combination alarms are where PV HIGH or PV LOW alarms are configured with, and often followed by, the next alarm level (PV HIGH-HIGH or PV LOW-LOW). Many systems are initially configured with all pre-alarms enabled, which contributes significantly to alarm flooding.
-
-**Philosophy:**
-* **By default, NO PV HIGH-HIGH or PV LOW-LOW alarms shall be configured.**
-* For a PV HIGH-HIGH or PV LOW-LOW alarm to exist, BOTH conditions must be met:
-  1. The operator actions for the pre-alarm (PV HIGH / PV LOW) vs. the next alarm (PV HIGH-HIGH / PV LOW-LOW) must be **significantly different in kind or degree**. Do not alarm twice for the operator to do the same thing.
-  2. There must be **enough time after the first alarm** for the operator to perform effective corrective action before the process activates the next alarm.
-* If these conditions are NOT met, set the override priority of the PV HIGH-HIGH / PV LOW-LOW alarm to "No Alarm" and set the override reason to "Operator response on the PV HIGH / PV LOW alarm".
-
-### 3. ESD BYPASS ALARMS
-When inputs or outputs to an ESD (Emergency Shutdown) system are bypassed for testing or operational reasons, the bypass status MUST be alarmed and displayed to the operator on their Human Machine Interface.
-
-**IMPORTANT - Priority Assignment for Bypass Alarms:**
-* **Do NOT use high control system priorities for ESD bypass alarms.** This is a common but incorrect practice.
-* Bypass alarms indicate that an abnormal situation (bypass) is occurring, typically for a proper reason like interlock testing which may take hours.
-* The purpose is to remind operators to reactivate the interlock when testing completes and allow for tracking of active bypasses.
-* **High priorities are reserved for abnormal situations requiring significant consequences and short time-frame responses** - this does NOT match bypass alarms in their normal use case.
-* Set ESD bypass alarms to **Priority 3** or **Diagnostic** priority.
-
-### 4. RATE OF CHANGE ALARMS
-Rate of change alarms occur when the process value changes faster than a configured maximum rate.
-
-**Philosophy:**
-* **Use this alarm type sparingly** - it easily generates unwanted alarms during normal process transitions.
-* **Typically, this alarm type should NOT be used.**
-* If used, adequate delays MUST be configured to ensure that noise in the Process Variable does not cause false rate of change alarms.
-* Default recommendation: **NONE** unless there is a specific, documented need with proper delay configuration.
-
-### 5. PRIORITIZATION METHOD
-Alarms are assigned a priority from a combination of the maximum severity of the consequence and the time available to respond to the alarm before the consequences become unavoidable.
-The Severity of the consequence is evaluated across four different Impacts
-1.	**Personnel:** ranges from no impact (NONE) to loss of life (SEVERE)
-2.	**Public or Environment:** range from no impact (NONE) to uncontrolled release of hazardous materials impacting the local community (SEVERE)
-3.	**Plant/Equipment:** ranges from no impact (NONE) to equipment damage costing >$500,000
-4.	**Costs/Production:** ranges from no impact (NONE) to significant disruption of operations costing >$500,000
-Use the following guidance to asses the severity across the impact categories
-| Impact Category \\ Severity | NONE | MINOR | MAJOR | SEVERE |
-| Personnel | No injury or health effect | Slight injury (first aid) or health effect, no disability, no lost time | lost time recordable, no permanent disability | lost time injury, disabling injury, loss of life |
-|Public or Environment | No effect | Minimal exposure, does not cross the fence line | Exposed to hazards that may cause injury, hospitialization and damage claims likely | uncontained release of hazardous materials with major environmental impact and 3rd party impact |
-| Plant/Equipment | No loss| Minor damage to equipment <$10,000 | Damage to equipment between $10,000 - $500,000 | Equipment damage > $500,000 |
-| Costs/Production | No loss | process disruption <$10,000 | Process upset impact between $10,000 - $500,000 | Severe upset impact >$500,000 |
-After the severity is assessed for each impact, the maximum time available for the operator to respond is determined by selecting one of four categories:
-1.	**> 30 minutes:** May not qualify for an alarm
-2.	**10 to 30 minutes:** Prompt response required
-3.	**3 to 10 minutes:** Rapid response required
-4.	**< 3 minutes:** Immediate response required
-The combination of the maximum severity and the time available to respond results in a priority following the matrix below
-*(Default Priority Matrix - Consequence Severity vs Response Time)*:
-| Response Time \\ Severity | NONE | MINOR | MAJOR | SEVERE |
-| :--- | :--- | :--- | :--- | :--- |
-| **> 30 minutes** | No Alarm | No Alarm | No Alarm | No Alarm |
-| **10 to 30 minutes** | No Alarm | Priority 3 | Priority 3 | Priority 2 |
-| **3 to 10 minutes** | No Alarm | Priority 3 | Priority 2 | Priority 2 |
-| **< 3 minutes** | No Alarm | Priority 2 | Priority 1 | Priority 1 |
-
-### 6. VENDOR-SPECIFIC D&R PRESETS (CRITICAL)
-Identify the Control System from the input tag data and apply the corresponding section strictly.
-
-#### A. FOXBORO I/A (FoxIA)
-* **Priorities:** P1 (High/Red), P2 (Med/Yellow), P3 (Low/Orange), P4 (Diagnostic/Magenta).
-* **Required Presets:**
-    * **HIABS / LOABS:** Keep and Rationalize (D&R).
-    * **HHABS / LLABS:** Combination alarms. **No Alarm** (Set to not configured) unless operator action is significantly different from HI/LO and time permits.
-    * **HIDEV / LODEV:** **REMOVE**. Generally not used.
-    * **RATE (Rate of Change):** **REMOVE**. Dangerous, causes floods.
-    * **IOBAD:** Set to **P4 (Diagnostic)**.
-    * **HIOUT / LOOUT:** **REMOVE**.
-
-#### B. YOKOGAWA CENTUM
-* **Priorities:** High (P1/Red), Medium (P2/Yellow), Low (P3), Log (Diagnostic).
-* **Presets:**
-    * **IOP/OOP (Input/Output Open):** Set to **Medium (P2)** or **Low (P3)**.
-    * **HI / LO:** Set to **High (P1)** or **Medium (P2)** based on risk.
-    * **HH / LL:** Set to **Logging (P4)** or N/A unless specific interlock pre-alarm needed.
-    * **VEL+ / VEL- (Velocity):** Set to **N/A** (Priority 4).
-    * **DV+ / DV-:** Set to **N/A** (Priority 4).
-
-#### C. DELTAV
-* **Priorities:** High, Medium, Low, Log.
-* **Presets:**
-    * **Comm Error / I/O Failure:** Set to **Log Priority**.
-    * **Rate of Change:** **REMOVE**. Dangerous, causes floods.
-    * **Deviation Alarm:** **REMOVE**.
-    * **High-High / Low-Low:** **REMOVE** (Not configured) unless specific criteria met.
-    * **High / Low:** Keep and Rationalize (D&R).
-
-#### D. WONDERWARE
-* **Priorities:** High (1), Med (2), Low (3), Log.
-* **Presets:**
-    * **ROC (Rate of Change):** **REMOVE**.
-    * **MAJDEV / MINDEV (Deviation):** **REMOVE**.
-    * **VALUE-LOLO / HIHI:** Suggest setting to **NAN** (Disable) unless distinct action exists.
-    * **VALUE-LOW / HIGH:** Keep and Rationalize (D&R).
-
-#### E. HONEYWELL (TPS & Experion)
-* **Priorities:** Emergency, High, Low.
-* **Presets:**
-    * **BADPV / UNREAS:** Set to **LOW** (or Journal).
-    * **PVHH / PVLL:** Suggest setting to **NOACTION/NAN**. Never default to exist.
-    * **DEVHI / DEVLO:** Set to **NOACTION/NAN**.
-    * **PVROCN / PVROCP:** Set to **NOACTION/NAN**.
-    * **CHOFST / CMDDIS:** Keep and Rationalize (D&R).
-
-#### F. EMERSON OVATION
-* **Presets:**
-    * **High-1 / Low-1:** Use these for standard alarms.
-    * **High-2 / Low-2:** Only use if actions differ from H1/L1.
-    * **High-3 / High-4:** **Do NOT Use.**
-    * **Better / Worse Alarms:** **Do NOT Use.** Violates alarm principles.
-    * **Return Alarms:** **Do NOT Use.**
-    * **Sensor / Timeout:** Treat as Diagnostic.
-
-### 7. ALARM DISPLAY NAME REFERENCE
-Use this reference to understand abbreviated alarm display names. If an alarm type matches one of these, use the description to inform your Cause, Consequence, and Corrective Action.
-
-| Code | Description |
-| :--- | :--- |
-| ABORT | Sequence Abort - logic sequence forced to stop (safety or operator command) |
-| ADVDEV | Advisory Deviation - PV/SP difference exceeds advisory limit |
-| BAD PV | Bad Process Variable - sensor input invalid/out of range |
-| BADCTL | Bad Control - control loop cannot execute (bad input or output failing) |
-| CHGOFST | Change of State - triggered when discrete signal transitions between states; often inappropriate as one state typically does not indicate abnormal condition |
-| CMDDIS | Command Disagree - device feedback doesn't match command (valve stiction) |
-| CMFAIL | Command Fail - output command not transmitted/executed |
-| DEV | Deviation Alarm - PV/SP difference exceeds deviation limit |
-| DEVHI | Deviation High - PV higher than SP beyond high deviation limit |
-| DEVLOW | Deviation Low - PV lower than SP beyond low deviation limit |
-| FAIL | Module Failure - control module/device/hardware has failed |
-| FLOWCOMPA.BADCOMPTERM | Flow Compensation Bad Term - compensation input has bad status |
-| HOLD | Sequence Hold - automated sequence paused awaiting operator |
-| OFFNRM | Off Normal - discrete device in non-normal state |
-| OPHIGH | Output High Limit - controller output saturated at max (100%) |
-| OPLOW | Output Low Limit - controller output saturated at min (0%) |
-| OVRDI0/1/2 | Override Interlock - override logic forcing safe/fallback state |
-| OVRDSI | Override Select Input - switched to different input/strategy |
-| PVHIGH | Process Variable High - PV exceeded high alarm limit |
-| PVHIHI | PV High-High - critical high, usually trip/safety condition |
-| PVLOLO | PV Low-Low - critical low, usually trip/safety condition |
-| PVLOW | Process Variable Low - PV below low alarm limit |
-| ROCNEG | Rate of Change Negative - PV decreasing too fast |
-| ROCPOS | Rate of Change Positive - PV increasing too fast |
-| STEPTO | Step Timeout - sequence step exceeded max time |
-| STOP | Sequence Stop - sequence completed or stopped |
-| UNCMD | Uncommanded Change - device changed state without command |
-| DEVCTLA*.OFFNRMPVALM | Device Control Off Normal - specific control module in off-normal state |
-
-### 8. OUTPUT INSTRUCTIONS
-Generate for EACH alarm:
-1. Cause - Use "Guideword" method (Valve Failure, Pump Trip, Controller Error, Instrument Error, Blockage, Leak, etc.)
-2. Consequence - DIRECT plant consequence if operator takes NO action
-3. Corrective Action - Clear actionable operator instruction
-4. Proposed Priority - If a priority matrix is provided in the Philosophy Rules, use ONLY the exact priority values from that matrix (e.g., "No Alarm", "Low", "High", "Emergency"). If no matrix is provided, match the site's naming convention. Also include REMOVE when appropriate.
-5. Max Time to Respond - Based on priority matrix mapping or standard times (Urgent/Emergency: <3min, High: 3-10min, Medium/Low: 10-30min, No Alarm: >30min)
-6. Reasoning - 1-2 sentences explaining your rationale, citing the specific Vendor Rule, Philosophy Matrix entry, or Reference Alarm used
-
-Rules:
-- If alarm implies safety interlock (Trip, Shutdown, ESD), Consequence reflects shutdown impact
-- Consequence must be plant-focused, not "alarm stays active"
-- For similar alarms in same functional group, use consistent values
-- **CONSISTENCY IS CRITICAL:** Alarms of the SAME alarm type (e.g., PVHIGH) on the SAME equipment type (e.g., Temperature, Level, Flow) MUST have IDENTICAL Cause, Consequence, Corrective Action, Proposed Priority, and Max Response Time. Only the tag-specific details may differ. Example: All PVHIGH alarms on Temperature sensors should have the same values.
-- When processing a batch of alarms, first group them by (alarm type + equipment type) and ensure all alarms in each group have consistent attributes
-- If vendor preset says REMOVE, set Proposed Priority to "REMOVE" and explain in Reasoning
-- For ESD bypass alarms, use Low or Diagnostic priority (NOT high priority)
-- For Rate of Change alarms, default to REMOVE unless specific documented need
-
-Output JSON array:
-[
-  {
-    "fullAlarmName": "original full alarm name",
-    "Cause": "...",
-    "Consequence": "...",
-    "Corrective Action": "...",
-    "Proposed Priority": "<use exact values from priority matrix if provided, or match site naming convention>",
-    "Max Time to Respond": "X minutes",
-    "Reasoning": "Brief citation of the specific Vendor Rule, Philosophy Matrix rule, or Reference Alarm used, e.g., 'Per philosophy matrix: SEVERE consequence + <3min response = Emergency priority'"
-  }
-]`
-    },
-
-    // ============================================
-    // PROCESS ANALYSIS AGENT
-    // ============================================
-
-    processAnalyzerPrompt: `You are an expert Process Engineer specializing in industrial process analysis. Your task is to analyze alarm data and process information to build a comprehensive understanding of the process.
-
-## OBJECTIVE
-Analyze the provided information to understand:
-1. How equipment relates to each other (dependencies, flow direction)
-2. Common failure modes and their root causes
-3. What gaps exist in the provided data (the CSV may represent only part of a larger process)
-
-## INPUT ANALYSIS APPROACH
-1. **Tag Name Analysis**: Extract equipment type from tag naming conventions (e.g., "FIC" = Flow Indicator Controller)
-2. **Description Column**: Use the Description field to understand what each piece of equipment does
-3. **P&ID Image** (if provided): Identify process flow, connections between equipment, and physical layout
-4. **Process Description** (if provided): Understand the overall process purpose and operation
-
-## TYPICAL FAILURE PATTERNS
-Consider these common failure modes:
-
-**Pumps/Motors**: Tripped on overload, Seal failure, Cavitation, Bearing failure, Motor overheat
-**Valves**: Stiction, Plugged, Failed open/closed, Positioner failure, Air supply loss
-**Vessels/Tanks**: Overfill, Drain plugged, Level measurement error, Pressure buildup
-**Heat Exchangers**: Fouling, Tube leak, Thermal stress, Bypass stuck
-**Compressors**: Surge, High discharge temperature, Low suction pressure, Vibration
-**Analyzers**: Calibration drift, Sample line plugged, Reagent exhausted, Cell contamination
-**Strainers/Filters**: Plugged, Differential pressure high, Bypass leaking
-**Instrumentation**: Transmitter drift, Signal loss, Cable fault, Power failure
-
-## OUTPUT FORMAT
-Return a JSON object with the following structure:
-
-{
-  "process_summary": "Brief 2-3 sentence description of what this process appears to do based on the available information",
-  "process_dependencies": [
-    {
-      "upstream": "Equipment/Tag that feeds or controls",
-      "downstream": "Equipment/Tag that receives or is controlled",
-      "relationship": "Description of the dependency (e.g., 'Pump feeds reactor through control valve')"
-    }
-  ],
-  "failure_patterns": {
-    "Equipment Type": [
-      {
-        "cause": "Root cause description (e.g., 'Plugged strainer', 'Pump trip', 'Valve stiction')",
-        "alarms_affected": ["Alarm types that would be triggered"],
-        "consequence": "What happens if not addressed"
-      }
-    ]
-  },
-  "process_gaps": [
-    "Description of what appears to be missing from the data (e.g., 'No reactor temperature alarms present - likely on different unit')"
-  ],
-  "guidance_for_d_and_r": "Specific recommendations for the D&R drafter to use more process-focused causes and consequences"
-}
-
-IMPORTANT: Be specific with causes - use actual process conditions like "Plugged strainer", "Pump tripped", "Loss of cooling water", "Upstream valve closed" rather than generic statements about alarm conditions.`,
 
     /**
      * Analyze process context from CSV data, process description, and P&ID image
@@ -1497,9 +1196,6 @@ ${safeSampleAlarms}
 
         IMPORTANT: Your response MUST be valid JSON matching the specified structure. Do not return markdown outside the JSON.`;
 
-        // Updated for Responses API format
-        const systemInstructions = this.processAnalyzerPrompt;
-
         // Build user content (text + optional image)
         let userContent = userPrompt;
 
@@ -1514,16 +1210,7 @@ ${safeSampleAlarms}
             ];
         }
 
-        // Responses API input format
-        const inputMessages = [
-            {
-                type: "message",
-                role: "user",
-                content: userContent
-            }
-        ];
-
-        // Call backend API (retry logic handled server-side)
+        // Call backend API (backend injects server-side prompts)
         let response;
         try {
             response = await fetch('/api/dr/analyze-process', {
@@ -1531,7 +1218,6 @@ ${safeSampleAlarms}
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userPrompt: userContent.type ? userContent : (typeof userContent === 'string' ? userContent : JSON.stringify(userContent)),
-                    systemInstructions: systemInstructions,
                     pidImageBase64: pidImageBase64,
                     modelConfig: {
                         deploymentType: 'dr',
@@ -2139,122 +1825,28 @@ Return a merged, enriched JSON object with the SAME structure as the input, but 
     },
 
     async processSingleBatch(alarms, processContext, philosophyRules, imageBase64, previousResults = [], processAnalysis = null) {
-        // Build alarm list with FULL ALARM NAMES
-        const alarmList = alarms.map((a, i) => {
-            const fullName = this.getFullAlarmName(a);
-            const desc = a.Description || a.description || '';
-            return `${i + 1}. Full Alarm Name: ${fullName}\n   Description: ${desc}`;
-        }).join('\n\n');
-
-        const rulesContext = philosophyRules ?
-            `\nPhilosophy Rules:\n- Priority Matrix: ${JSON.stringify(philosophyRules.priority_matrix || [])}\n- Severity Matrix: ${JSON.stringify(philosophyRules.severity_matrix || [])}`
-            : '';
-
-        // Build process analysis context if available
-        let processAnalysisContext = '';
-        if (processAnalysis) {
-            processAnalysisContext = `\n\n## PROCESS ANALYSIS CONTEXT (Use for process-focused Causes and Consequences)\n`;
-            processAnalysisContext += `Process Summary: ${processAnalysis.process_summary || 'Not available'}\n\n`;
-
-            if (processAnalysis.failure_patterns) {
-                processAnalysisContext += `### Typical Failure Patterns by Equipment Type:\n`;
-                Object.entries(processAnalysis.failure_patterns).forEach(([eqType, patterns]) => {
-                    processAnalysisContext += `**${eqType}**:\n`;
-                    if (Array.isArray(patterns)) {
-                        patterns.forEach(p => {
-                            processAnalysisContext += `- Cause: ${p.cause} → Consequence: ${p.consequence}\n`;
-                        });
-                    }
-                });
-                processAnalysisContext += '\n';
-            }
-
-            if (processAnalysis.guidance_for_d_and_r) {
-                processAnalysisContext += `### D&R Guidance:\n${processAnalysis.guidance_for_d_and_r}\n`;
-            }
-
-            processAnalysisContext += `\nIMPORTANT: Use specific process conditions from the failure patterns above (e.g., "Plugged strainer", "Pump tripped", "Loss of cooling water") rather than generic alarm descriptions.\n`;
-        }
-
-        // Build context from D&R-complete alarms on same tags as reference examples
-        let referenceContext = '';
-        const currentTags = new Set(alarms.map(a => a.Tag || a.tag));
-
-        // Find D&R-complete alarms from same tags (from the original alarm data)
+        // Prepare reference alarms (D&R-complete examples from same tags)
         const drCompleteExamples = alarms
             .filter(a => a._isComplete && (a.Cause1 || a.Consequence1 || a['Corrective Action1']))
             .slice(0, 3); // Limit to 3 examples to save tokens
 
-        if (drCompleteExamples.length > 0) {
-            const examples = drCompleteExamples.map(a => {
-                const fullName = this.getFullAlarmName(a);
-                return `- ${fullName}:\n    Cause: ${a.Cause1 || 'N/A'}\n    Consequence: ${a.Consequence1 || 'N/A'}\n    Corrective Action: ${a['Corrective Action1'] || 'N/A'}\n    Priority: ${a['Proposed Priority'] || a.Priority || 'N/A'}`;
-            }).join('\n');
-            referenceContext = `\n\nREFERENCE ALARMS (D&R Complete - use as templates for similar alarms):\n${examples}\nIMPORTANT: When you use a reference alarm's pattern, cite it in your Reasoning like: "Based on similar alarm [AlarmName]..."\n`;
-        }
+        // Prepare previously drafted alarms on same tags for consistency
+        const currentTags = new Set(alarms.map(a => a.Tag || a.tag));
+        const relevantPrevious = previousResults.filter(r => currentTags.has(r.alarm.Tag || r.alarm.tag));
 
-        // Build context from previously drafted alarms on same tags for consistency
-        let previousContext = '';
-        if (previousResults.length > 0) {
-            const relevantPrevious = previousResults.filter(r => currentTags.has(r.alarm.Tag || r.alarm.tag));
-
-            if (relevantPrevious.length > 0) {
-                const prevSummary = relevantPrevious.map(r =>
-                    `- ${r.fullAlarmName}: Priority=${r.draft['Proposed Priority']}, ResponseTime=${r.draft['Max Time to Respond']}`
-                ).join('\n');
-                previousContext = `\n\nPREVIOUSLY DRAFTED ALARMS ON SAME TAGS (for consistency):\n${prevSummary}\nEnsure new alarms on the same tag use consistent priority logic.\n`;
-            }
-        }
-
-        // Get priority values from matrix if available, otherwise use detected scheme
-        let prioritySchemeInstruction = '';
-        if (philosophyRules && philosophyRules.priority_matrix && philosophyRules.priority_matrix.length > 0) {
-            // Extract unique priority values from the matrix
-            const uniquePriorities = [...new Set(philosophyRules.priority_matrix.map(item => item.priority))];
-            const priorityList = uniquePriorities.map(p => `"${p}"`).join(', ');
-            prioritySchemeInstruction = `\n\nCRITICAL - PRIORITY VALUES: You MUST use ONLY these exact priority values from the philosophy priority matrix: ${priorityList}. Also include "REMOVE" when applicable. Do NOT use any other priority naming (no "Priority 1/2/3" unless those exact strings are in the list above).\n`;
-        } else {
-            // Fallback to detected scheme if no priority matrix
-            prioritySchemeInstruction = this.detectedPriorityScheme === 'descriptive'
-                ? `\n\nIMPORTANT - PRIORITY NAMING: The source data uses DESCRIPTIVE priority names (High, Medium, Low, Urgent, etc.). Your Proposed Priority values MUST use the same descriptive naming style (e.g., "High", "Medium", "Low", "Urgent", "None", "Remove"). Do NOT use numeric priority names like "Priority 1" for this dataset.\n`
-                : `\n\nIMPORTANT - PRIORITY NAMING: The source data uses NUMERIC priority names (Priority 1, Priority 2, Priority 3, etc.). Your Proposed Priority values MUST use the same numeric naming style (e.g., "Priority 1", "Priority 2", "Priority 3", "No Alarm", "Remove"). Do NOT use descriptive names like "High" for this dataset.\n`;
-        }
-
-        const userPrompt = `Process Context: ${processContext || 'Industrial process equipment'}
-${rulesContext}${processAnalysisContext}${referenceContext}${previousContext}${prioritySchemeInstruction}
-Alarms to rationalize:
-${alarmList}
-
-Generate rationalization for ALL ${alarms.length} alarms. 
-
-CRITICAL REASONING REQUIREMENTS:
-- In your Reasoning field, ALWAYS clearly state the source of your priority decision
-- If based on a D&R-complete reference alarm, cite it: "Based on reference alarm [AlarmName]..."
-- If based on philosophy rules/matrix, cite it: "Per philosophy matrix: [consequence] + [response time] = [priority]"
-- If based on vendor preset rules from prompt knowledge, cite it: "Per [Vendor] preset: [rule applied]"
-- If based on Combination Alarm, ESD Bypass, or Rate of Change rules, cite the specific rule section`;
-
-        const messages = [
-            { role: 'system', content: this.systemPrompts.batchDrafter },
-            { role: 'user', content: userPrompt }
-        ];
-
-        if (imageBase64) {
-            messages[1] = {
-                role: 'user',
-                content: [
-                    { type: 'text', text: userPrompt },
-                    { type: 'image_url', image_url: { url: `data:image/jpeg;base64,${imageBase64}` } }
-                ]
-            };
-        }
-
-        // Call backend API for batch rationalization
+        // Call backend API with structured data (backend assembles the prompt)
         const response = await fetch('/api/dr/batch-rationalize', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                messages: messages,
+                alarms: alarms,
+                processContext: processContext,
+                philosophyRules: philosophyRules,
+                processAnalysis: processAnalysis,
+                referenceAlarms: drCompleteExamples,
+                previousDrafts: relevantPrevious,
+                detectedPriorityScheme: this.detectedPriorityScheme || 'numeric',
+                pidImageBase64: imageBase64,
                 modelConfig: {
                     deploymentType: 'dr',
                     reasoningEffort: window.chatbotService.config.reasoningEffort
