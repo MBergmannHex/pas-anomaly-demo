@@ -116,8 +116,14 @@ router.post('/extract-philosophy', async (req, res, next) => {
             return res.status(400).json({ error: 'pdfText is required' });
         }
 
-        // Truncate to 15000 chars (matches frontend logic)
-        const truncatedText = pdfText.substring(0, 15000);
+        // Truncate to 100000 chars to utilize 128k token capacity (~75k tokens for input)
+        const maxChars = 100000;
+        const wasTruncated = pdfText.length > maxChars;
+        const truncatedText = pdfText.substring(0, maxChars);
+
+        if (wasTruncated) {
+            console.log(`[Chat Philosophy Extract] PDF truncated from ${pdfText.length} to ${maxChars} characters`);
+        }
 
         const input = [
             {
@@ -129,8 +135,15 @@ router.post('/extract-philosophy', async (req, res, next) => {
 
         const result = await openaiProxy.callResponses(input, {
             deploymentType: 'general',
-            maxOutputTokens: 8000
+            maxOutputTokens: 16000
         });
+
+        // Add truncation info to response if applicable
+        if (wasTruncated) {
+            result.wasTruncated = true;
+            result.originalLength = pdfText.length;
+            result.truncatedLength = maxChars;
+        }
 
         res.json(result);
     } catch (error) {
@@ -150,8 +163,14 @@ router.post('/enrich-safety', async (req, res, next) => {
             return res.status(400).json({ error: 'safetyText is required' });
         }
 
-        // Truncate to 20000 chars (matches frontend logic)
-        const truncatedText = safetyText.substring(0, 20000);
+        // Truncate to 100000 chars to utilize 128k token capacity (~75k tokens for input)
+        const maxChars = 100000;
+        const wasTruncated = safetyText.length > maxChars;
+        const truncatedText = safetyText.substring(0, maxChars);
+
+        if (wasTruncated) {
+            console.log(`[Safety Enrichment] Document truncated from ${safetyText.length} to ${maxChars} characters`);
+        }
 
         const input = [
             {
@@ -163,8 +182,15 @@ router.post('/enrich-safety', async (req, res, next) => {
 
         const result = await openaiProxy.callResponses(input, {
             deploymentType: 'general',
-            maxOutputTokens: 8000
+            maxOutputTokens: 16000
         });
+
+        // Add truncation info to response if applicable
+        if (wasTruncated) {
+            result.wasTruncated = true;
+            result.originalLength = safetyText.length;
+            result.truncatedLength = maxChars;
+        }
 
         res.json(result);
     } catch (error) {

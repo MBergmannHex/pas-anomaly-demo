@@ -1474,42 +1474,15 @@ window.chatbotService = {
 
     extractPhilosophyRules: async function (text) {
         console.log('[Chatbot] Extracting Philosophy Rules...');
-        const prompt = `
-            You are an expert Automation Engineer specialized in ISA 18.2 Alarm Management. 
-            Your task is to parse a raw "Alarm Philosophy" document and extract the configuration rules into strict JSON format.
-
-            Output JSON Structure:
-            {
-                "priority_matrix": [
-                    { "level": "High", "criteria": "Safety consequence > $1M OR Time to respond < 5 min", "color": "Red" },
-                    { "level": "Medium", "criteria": "Production loss > $10k OR Time to respond < 15 min", "color": "Yellow" },
-                    { "level": "Low", "criteria": "Minor upset", "color": "White" }
-                ],
-                "thresholds": {
-                    "chattering_count": 3,   // default if not found
-                    "chattering_window_sec": 60, // default if not found
-                    "stale_alarm_hours": 24,
-                    "flood_alarm_count": 10
-                },
-                "timers": {
-                    "min_on_delay_sec": 2,
-                    "min_off_delay_sec": 5
-                }
-            }
-
-            Do not include markdown formatting. Return ONLY the JSON object.
-            
-            Document Content:
-            ${text.substring(0, 15000)} // Truncate to avoid token limits if necessary
-        `;
+        console.log(`[Chatbot] PDF text length: ${text.length} characters`);
 
         try {
-            // Call backend API
+            // Call backend API (backend handles truncation if needed)
             const response = await fetch('/api/chat/extract-philosophy', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    pdfText: text.substring(0, 15000)
+                    pdfText: text  // Send full text, backend will truncate if necessary
                 })
             });
 
@@ -1519,6 +1492,15 @@ window.chatbotService = {
             }
 
             const data = await response.json();
+
+            // Check if truncation occurred
+            if (data.wasTruncated) {
+                console.warn(`[Chatbot] PDF was truncated from ${data.originalLength} to ${data.truncatedLength} characters (${Math.round(data.truncatedLength / data.originalLength * 100)}% processed)`);
+                // Display user notification
+                if (window.addLog) {
+                    window.addLog(`⚠️ Philosophy document was truncated: ${Math.round(data.truncatedLength / data.originalLength * 100)}% of content processed (${data.originalLength} → ${data.truncatedLength} chars)`);
+                }
+            }
 
             // Updated response parsing
             const messageOutput = data.output.find(item => item.type === 'message');
@@ -1537,42 +1519,15 @@ window.chatbotService = {
 
     enrichWithSafetyData: async function (tagList, safetyText) {
         console.log('[Chatbot] Enriching Safety Data (High-Fidelity)...');
-        const prompt = `
-            You are a Process Safety Expert. Parse the text provided and extract alarm rationalization details.
-            You must structure the output to link specific Causes to their specific Verifications and Actions.
-
-            Output JSON format:
-            {
-              "causes": [
-                {
-                  "tag": "LSH-101", // Extracted tag
-                  "cause_text": "Inlet valve FV-101 failed open", 
-                  "verification_method": "Check pressure trends on PI-102", 
-                  "corrective_action": "Close manual isolation valve V-101"
-                }
-              ],
-              "consequence_summary": "Tank overflow leading to potential environmental release",
-              "impact_severity": {
-                "safety": "None|Low|Medium|High",
-                "environment": "None|Low|Medium|High",
-                "financial": "None|Low|Medium|High"
-              }
-            }
-
-            If multiple tags are found, return a list of objects with this structure.
-            If no tags are found, return an empty list [].
-            
-            Document Content:
-            ${safetyText.substring(0, 20000)}
-        `;
+        console.log(`[Chatbot] Safety document length: ${safetyText.length} characters`);
 
         try {
-            // Call backend API
+            // Call backend API (backend handles truncation if needed)
             const response = await fetch('/api/chat/enrich-safety', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    safetyText: safetyText.substring(0, 20000)
+                    safetyText: safetyText  // Send full text, backend will truncate if necessary
                 })
             });
 
@@ -1582,6 +1537,15 @@ window.chatbotService = {
             }
 
             const data = await response.json();
+
+            // Check if truncation occurred
+            if (data.wasTruncated) {
+                console.warn(`[Chatbot] Safety document was truncated from ${data.originalLength} to ${data.truncatedLength} characters (${Math.round(data.truncatedLength / data.originalLength * 100)}% processed)`);
+                // Display user notification
+                if (window.addLog) {
+                    window.addLog(`⚠️ Safety document was truncated: ${Math.round(data.truncatedLength / data.originalLength * 100)}% of content processed (${data.originalLength} → ${data.truncatedLength} chars)`);
+                }
+            }
 
             // Updated response parsing
             const messageOutput = data.output.find(item => item.type === 'message');
