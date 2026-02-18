@@ -3308,12 +3308,12 @@
                                     </button>
                                     {/* Hidden file input for CSV upload */}
                                     <input ref={fileInputRef} type="file" accept=".csv" onChange={handleFileUpload} className="hidden" />
-                                    {data && (
+                                    {data && appMode === 'analysis' && (
                                         <button onClick={handleTrainModel} disabled={modelStatus === 'training'} className="bg-purple-700 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-purple-800 transition-colors disabled:opacity-50 text-sm">
                                             <i className="fas fa-brain mr-1"></i>{modelStatus === 'training' ? 'Training...' : 'Train'}
                                         </button>
                                     )}
-                                    {model && modelStatus === 'trained' && (
+                                    {model && modelStatus === 'trained' && appMode === 'analysis' && (
                                         <button onClick={handleDeleteModel} className="bg-red-600 text-white px-3 py-1.5 rounded-lg font-medium hover:bg-red-700 transition-colors text-sm" title="Delete saved model">
                                             <i className="fas fa-trash"></i>
                                         </button>
