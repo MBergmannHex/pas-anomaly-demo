@@ -57,6 +57,20 @@ The backend uses **Azure OpenAI** with two deployment configurations:
 
 API credentials are stored server-side in `.env` (local) or Azure App Service environment variables (production).
 
+### PDF & Document Processing
+
+**Token Capacity:** 128k input tokens (~75k-100k characters for documents)
+
+**Processing Limits:**
+- **Main D&R workflow** (`/api/dr/extract-philosophy`): **No truncation** - processes full PDFs
+- **Chatbot features** (`/api/chat/extract-philosophy`, `/api/chat/enrich-safety`): Truncates to **100,000 characters** when needed
+- **User notifications**: Displays warning in log when documents are truncated (e.g., "⚠️ Philosophy document was truncated: 85% of content processed")
+
+**Output tokens:**
+- Standard routes: 8,000 tokens
+- Philosophy/safety extraction: 16,000 tokens (increased for better extraction quality)
+- Batch rationalization: 32,000 tokens (for detailed D&R output)
+
 ### AI Prompt Management
 
 All AI system prompts are stored in `server/prompts/` for security and easy editing:

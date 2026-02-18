@@ -124,7 +124,12 @@ The AI analyzes tag naming conventions (e.g., "FIC-101" = Flow Indicator Control
 **Purpose:** Extract the site's alarm management rules from their philosophy document.
 
 **Input:**
-- Alarm philosophy PDF (converted to text, truncated to 15,000 chars)
+- Alarm philosophy PDF (converted to text)
+- **Main D&R workflow**: No truncation - processes full PDFs
+- **Chatbot feature**: Truncates to 100,000 characters if needed (~75k tokens)
+- **User notification**: Displays warning if document was truncated (e.g., "⚠️ 85% of content processed")
+
+**Token capacity:** Azure OpenAI 128k context window allows processing large philosophy documents (100+ pages)
 
 **AI Task:**
 Parse the document to extract:
