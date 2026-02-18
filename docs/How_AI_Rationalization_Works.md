@@ -37,18 +37,29 @@ The D&R feature uses Azure OpenAI's advanced language models (GPT-4, GPT-5, o1, 
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 1: Process Analysis (Optional)                            │
+│ STEP 1A: Initial Process Analysis (Optional)                   │
 │ ┌───────────────────────────────────────────────────────────┐   │
-│ │ Input: CSV alarm data + P&ID image + process description │   │
+│ │ Input: CSV tags/descriptions + P&ID + process desc       │   │
 │ │ Model: Responses API (GPT-4/5)                           │   │
-│ │ Output: Equipment dependencies, failure patterns         │   │
+│ │ Logic: Parse ISA 5.1 tags, infer equipment, dependencies│   │
+│ │ Output: Equipment inventory, failure patterns, guidance  │   │
+│ └───────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+                               ↓
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 1B: Web Search Enrichment (Optional)                      │
+│ ┌───────────────────────────────────────────────────────────┐   │
+│ │ Input: Initial analysis from Step 1A                     │   │
+│ │ Model: Responses API + web_search_preview tool           │   │
+│ │ Logic: Search for process types, failure modes, validation│  │
+│ │ Output: Enriched analysis with web findings              │   │
 │ └───────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
 │ STEP 2: Philosophy Extraction                                  │
 │ ┌───────────────────────────────────────────────────────────┐   │
-│ │ Input: Alarm philosophy PDF document                     │   │
+│ │ Input: Alarm philosophy PDF (up to 100k chars)           │   │
 │ │ Model: Chat Completions API (GPT-4/5)                    │   │
 │ │ Output: Priority matrix, severity matrix, site rules     │   │
 │ └───────────────────────────────────────────────────────────┘   │
@@ -57,8 +68,9 @@ The D&R feature uses Azure OpenAI's advanced language models (GPT-4, GPT-5, o1, 
 ┌─────────────────────────────────────────────────────────────────┐
 │ STEP 3: Batch Rationalization (Core D&R)                       │
 │ ┌───────────────────────────────────────────────────────────┐   │
-│ │ Input: 10 alarms + context (philosophy, process, refs)   │   │
+│ │ Input: 10 alarms + process analysis + philosophy + refs  │   │
 │ │ Model: Chat Completions API (GPT-5/o1/o3)                │   │
+│ │ Context Injection: Process failure patterns, D&R guidance│   │
 │ │ Output: Cause, Consequence, Action, Priority, Reasoning  │   │
 │ └───────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
@@ -77,20 +89,46 @@ All AI prompts are stored in `server/prompts/` (server-side only):
 
 ### Phase 1: Process Analysis (Optional but Recommended)
 
-**Purpose:** Build contextual understanding of the industrial process.
+**Purpose:** Build contextual understanding of the industrial process to enable process-specific D&R instead of generic alarm descriptions.
+
+This phase consists of **two steps**:
+
+#### Step 1A: Initial Process Analysis
 
 **Input:**
 - CSV alarm database (tags, descriptions, alarm types)
-- P&ID diagram (optional, as base64 image)
-- User-provided process description (optional)
+- P&ID diagram (optional, as base64 image for visual context)
+- User-provided process description (optional text description)
 
-**AI Task:**
-The AI analyzes tag naming conventions (e.g., "FIC-101" = Flow Indicator Controller) and equipment descriptions to infer:
-- Equipment types (pumps, valves, vessels, heat exchangers, compressors)
-- Process dependencies (which equipment feeds/controls other equipment)
-- Common failure modes (e.g., "Pump trip", "Valve stiction", "Plugged strainer")
+**How AI derives process understanding from tags and descriptions:**
+
+The AI uses **ISA 5.1 tag naming conventions** and **equipment description patterns** to reverse-engineer the process:
+
+1. **Tag Parsing:**
+   - `FIC-101` → Flow Indicator Controller on loop 101
+   - `PSH-201A` → Pressure Switch High, equipment 201, train A
+   - `TT-304` → Temperature Transmitter 304
+   - Tag prefixes reveal equipment types (P=Pump, T=Tower, E=Exchanger, V=Valve)
+
+2. **Description Analysis:**
+   - "Discharge pressure" → Identifies pump discharge measurement
+   - "Reboiler outlet" → Identifies heat exchanger in distillation
+   - "Reflux flow" → Identifies distillation column internals
+   - Scans for keywords: "trip", "interlock", "shutdown", "bypass", "override"
+
+3. **Equipment Grouping:**
+   - Groups tags by prefix/number to identify equipment trains (e.g., "101A" and "101B" = parallel equipment)
+   - Identifies control loops (e.g., FIC-101 controls FCV-101)
+   - Maps tag relationships (flow transmitter → flow controller → control valve)
+
+4. **Failure Pattern Inference:**
+   - Cross-references alarm types (PVHIGH, PVLOW, CMDDIS) with equipment types
+   - Infers likely failure modes: "Pump PVLOW on flow" → "Pump trip or suction blockage"
+   - Builds cause-consequence chains: "Feed pump trip" → "Column level drops" → "Reboiler alarm"
 
 **Prompt File:** `server/prompts/process-analyzer.js` (54 lines)
+
+**API Route:** `/api/dr/analyze-process` (Responses API with optional image input)
 
 **Output Example:**
 ```json
@@ -100,22 +138,137 @@ The AI analyzes tag naming conventions (e.g., "FIC-101" = Flow Indicator Control
     {
       "upstream": "Feed Pump P-101",
       "downstream": "Distillation Column T-101",
-      "relationship": "Pump feeds column through control valve FCV-101"
+      "relationship": "Pump feeds column through control valve FCV-101",
+      "criticality": "High - feed interruption causes column upset"
     }
   ],
   "failure_patterns": {
     "Pumps": [
       {
-        "cause": "Pump tripped on overload",
-        "alarms_affected": ["PVLOW on flow", "PVHIGH on discharge pressure"],
-        "consequence": "Loss of feed to column, potential column upset"
+        "cause": "Pump tripped on motor overload",
+        "alarms_affected": ["FIC-101 PVLOW", "PSH-102 PVHIGH"],
+        "consequence": "Loss of feed to column, potential column flooding or dry-out"
+      },
+      {
+        "cause": "Suction strainer plugged",
+        "alarms_affected": ["FIC-101 PVLOW", "PSL-100 PVLOW"],
+        "consequence": "Reduced throughput, potential pump cavitation"
+      }
+    ],
+    "Heat Exchangers": [
+      {
+        "cause": "Fouling of reboiler tubes",
+        "alarms_affected": ["TI-301 PVLOW", "LIC-201 PVHIGH"],
+        "consequence": "Loss of heating duty, column temperature upset, flooding"
+      }
+    ]
+  },
+  "equipment_inventory": {
+    "Pumps": ["P-101 (Feed Pump)", "P-102 (Reflux Pump)"],
+    "Towers": ["T-101 (Main Distillation Column)"],
+    "Heat Exchangers": ["E-101 (Reboiler)", "E-102 (Condenser)"],
+    "Vessels": ["V-101 (Reflux Drum)"]
+  },
+  "guidance_for_d_and_r": "Focus on upstream/downstream impacts. Feed pump trips affect column stability. Reboiler issues cause temperature and level upsets. Use specific process failure modes rather than generic descriptions."
+}
+```
+
+#### Step 1B: Web Search Enrichment (Optional Enhancement)
+
+**Purpose:** Validate and enrich the initial analysis with real-world engineering data from the web.
+
+**API Route:** `/api/dr/web-search` (Responses API with `web_search_preview` tool enabled)
+
+**How web search refines the understanding:**
+
+The AI performs **targeted web searches** based on the initial analysis:
+
+1. **Process Unit Identification:**
+   - Search query: *"Typical crude distillation unit process flow"*
+   - Validates if the inferred process type matches known configurations
+   - Confirms expected equipment arrangements and dependencies
+
+2. **Equipment-Specific Failure Modes:**
+   - Search query: *"Centrifugal pump common failure modes chemical plant"*
+   - Finds industry-standard failure modes beyond what's in the tag data
+   - Adds failure modes like "seal failure", "impeller wear", "vapor lock"
+
+3. **Process Dependency Validation:**
+   - Search query: *"Does reboiler failure cause high column pressure distillation"*
+   - Verifies cause-consequence relationships against chemical engineering principles
+   - Corrects any incorrect inferences from Step 1A
+
+4. **Industry Best Practices:**
+   - Search query: *"Alarm rationalization guidelines for distillation columns ISA 18.2"*
+   - Adds industry-specific guidance for D&R prioritization
+   - Finds typical response times and consequence classifications
+
+**Output Enhancement:**
+```json
+{
+  "process_summary": "Distillation unit with feed pump, reboiler, condenser, and reflux system",
+  "web_search_summary": "Validated as typical atmospheric distillation configuration per Perry's Handbook. Feed pump failure modes confirmed via API 610 standards. Reboiler fouling patterns match industry literature for hydrocarbon service.",
+  "process_dependencies": [
+    {
+      "upstream": "Feed Pump P-101",
+      "downstream": "Distillation Column T-101",
+      "relationship": "Pump feeds column through control valve FCV-101",
+      "criticality": "High - feed interruption causes column upset",
+      "web_search_findings": "Per chemical engineering literature, feed interruptions to distillation columns cause rapid pressure and temperature transients. Typical recovery time: 2-4 hours."
+    }
+  ],
+  "failure_patterns": {
+    "Pumps": [
+      {
+        "cause": "Pump tripped on motor overload",
+        "alarms_affected": ["FIC-101 PVLOW", "PSH-102 PVHIGH"],
+        "consequence": "Loss of feed to column, potential column flooding or dry-out",
+        "web_search_findings": "API 610 lists motor overload as leading cause of centrifugal pump trips (23% of failures). Typical causes: bearing failure, seal issues, impeller imbalance."
       }
     ]
   }
 }
 ```
 
-**How it's used:** This context is injected into the batch rationalization prompt to ensure process-specific causes and consequences (instead of generic alarm descriptions).
+**Fallback behavior:** If web search fails or times out, the system uses the initial analysis from Step 1A.
+
+---
+
+#### How Process Analysis is Shared with Core D&R (Phase 3)
+
+The enriched process analysis is **injected into every batch rationalization prompt** as a dedicated context section:
+
+**Injection format:**
+```markdown
+## PROCESS ANALYSIS CONTEXT (Use for process-focused Causes and Consequences)
+
+Process Summary: Distillation unit with feed pump, reboiler, condenser, and reflux system
+
+### Typical Failure Patterns by Equipment Type:
+**Pumps**:
+- Cause: Pump tripped on motor overload → Consequence: Loss of feed to column, potential column upset
+- Cause: Suction strainer plugged → Consequence: Reduced throughput, potential pump cavitation
+
+**Heat Exchangers**:
+- Cause: Fouling of reboiler tubes → Consequence: Loss of heating duty, column temperature upset, flooding
+
+### D&R Guidance:
+Focus on upstream/downstream impacts. Feed pump trips affect column stability. Reboiler issues cause temperature and level upsets. Use specific process failure modes rather than generic descriptions.
+
+IMPORTANT: Use specific process conditions from the failure patterns above (e.g., "Plugged strainer", "Pump tripped", "Loss of cooling water") rather than generic alarm descriptions.
+```
+
+**Impact on D&R quality:**
+
+Without process analysis:
+- Cause: "Flow too low"
+- Consequence: "Flow is below setpoint"
+- Action: "Check flow measurement"
+
+With process analysis:
+- Cause: "Feed pump P-101 tripped on motor overload, likely due to bearing failure or seal leak (per API 610)"
+- Consequence: "Loss of feed to distillation column T-101 causes rapid level drop in reflux drum V-101, potential column dry-out and temperature excursion. Recovery time: 2-4 hours."
+- Action: "1) Check pump motor current and vibration at MCC-1. 2) Inspect pump seal and bearing condition. 3) Restart pump after fault cleared. 4) Monitor column temperature profile during recovery."
 
 ---
 
