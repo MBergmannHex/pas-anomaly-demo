@@ -37,7 +37,16 @@ The D&R feature uses Azure OpenAI's advanced language models (GPT-4, GPT-5, o1, 
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 1A: Initial Process Analysis (Optional)                   │
+│ STEP 1: Philosophy Extraction                                  │
+│ ┌───────────────────────────────────────────────────────────┐   │
+│ │ Input: Alarm philosophy PDF (up to 100k chars)           │   │
+│ │ Model: Chat Completions API (GPT-4/5)                    │   │
+│ │ Output: Priority matrix, severity matrix, site rules     │   │
+│ └───────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│ STEP 2A: Initial Process Analysis (Optional)                   │
 │ ┌───────────────────────────────────────────────────────────┐   │
 │ │ Input: CSV tags/descriptions + P&ID + process desc       │   │
 │ │ Model: Responses API (GPT-4/5)                           │   │
@@ -47,9 +56,9 @@ The D&R feature uses Azure OpenAI's advanced language models (GPT-4, GPT-5, o1, 
 └─────────────────────────────────────────────────────────────────┘
                                ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 1B: Web Search Enrichment (Optional)                      │
+│ STEP 2B: Web Search Enrichment (Optional)                      │
 │ ┌───────────────────────────────────────────────────────────┐   │
-│ │ Input: Initial analysis from Step 1A                     │   │
+│ │ Input: Initial analysis from Step 2A                     │   │
 │ │ Model: Responses API + web_search_preview tool           │   │
 │ │ Logic: Search for process types, failure modes, validation│  │
 │ │ Output: Enriched analysis with web findings              │   │
@@ -57,20 +66,11 @@ The D&R feature uses Azure OpenAI's advanced language models (GPT-4, GPT-5, o1, 
 └─────────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────────┐
-│ STEP 2: Philosophy Extraction                                  │
-│ ┌───────────────────────────────────────────────────────────┐   │
-│ │ Input: Alarm philosophy PDF (up to 100k chars)           │   │
-│ │ Model: Chat Completions API (GPT-4/5)                    │   │
-│ │ Output: Priority matrix, severity matrix, site rules     │   │
-│ └───────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
 │ STEP 3: Batch Rationalization (Core D&R)                       │
 │ ┌───────────────────────────────────────────────────────────┐   │
-│ │ Input: 10 alarms + process analysis + philosophy + refs  │   │
+│ │ Input: 10 alarms + philosophy + process analysis + refs  │   │
 │ │ Model: Chat Completions API (GPT-5/o1/o3)                │   │
-│ │ Context Injection: Process failure patterns, D&R guidance│   │
+│ │ Context Injection: Philosophy rules, process patterns    │   │
 │ │ Output: Cause, Consequence, Action, Priority, Reasoning  │   │
 │ └───────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────┘
@@ -87,13 +87,70 @@ All AI prompts are stored in `server/prompts/` (server-side only):
 
 ## The AI Rationalization Pipeline
 
-### Phase 1: Process Analysis (Optional but Recommended)
+### Phase 1: Philosophy Extraction
+
+**Purpose:** Extract the site's alarm management rules from their philosophy document.
+
+**Input:**
+- Alarm philosophy PDF (converted to text)
+- **Main D&R workflow**: No truncation - processes full PDFs
+- **Chatbot feature**: Truncates to 100,000 characters if needed (~75k tokens)
+- **User notification**: Displays warning if document was truncated (e.g., "⚠️ 85% of content processed")
+
+**Token capacity:** Azure OpenAI 128k context window allows processing large philosophy documents (100+ pages)
+
+**AI Task:**
+Parse the document to extract:
+- **Priority Matrix:** Consequence severity vs. Response time → Priority level
+- **Severity Matrix:** Impact category (Personnel, Environment, Financial) definitions
+- **Site Rules:** Specific policies (e.g., "All bypass alarms = Priority 3")
+
+**Prompt File:** `server/prompts/philosophy-extraction.js` (156 lines)
+
+**Output Example:**
+```json
+{
+  "priority_matrix": [
+    {
+      "severity": "SEVERE",
+      "max_response_time": "<3 minutes",
+      "priority": "Emergency"
+    },
+    {
+      "severity": "MAJOR",
+      "max_response_time": "3 to 10 minutes",
+      "priority": "High"
+    }
+  ],
+  "severity_matrix": [
+    {
+      "impact_category": "Personnel",
+      "severity": "SEVERE",
+      "entry": "Serious injury or fatality"
+    }
+  ],
+  "rules": [
+    {
+      "id": "ALM-005",
+      "category": "ESD Bypass",
+      "rule": "All ESD bypass alarms shall be Priority 3 or Diagnostic",
+      "source": ["Section 4.2"]
+    }
+  ]
+}
+```
+
+**How it's used:** The priority matrix and rules are injected into batch rationalization (Phase 3) to ensure the AI uses the **site's actual priority scheme** (not generic ISA 18.2 defaults).
+
+---
+
+### Phase 2: Process Analysis (Optional but Recommended)
 
 **Purpose:** Build contextual understanding of the industrial process to enable process-specific D&R instead of generic alarm descriptions.
 
 This phase consists of **two steps**:
 
-#### Step 1A: Initial Process Analysis
+#### Step 2A: Initial Process Analysis
 
 **Input:**
 - CSV alarm database (tags, descriptions, alarm types)
@@ -173,7 +230,7 @@ The AI uses **ISA 5.1 tag naming conventions** and **equipment description patte
 }
 ```
 
-#### Step 1B: Web Search Enrichment (Optional Enhancement)
+#### Step 2B: Web Search Enrichment (Optional Enhancement)
 
 **Purpose:** Validate and enrich the initial analysis with real-world engineering data from the web.
 
@@ -196,7 +253,7 @@ The AI performs **targeted web searches** based on the initial analysis:
 3. **Process Dependency Validation:**
    - Search query: *"Does reboiler failure cause high column pressure distillation"*
    - Verifies cause-consequence relationships against chemical engineering principles
-   - Corrects any incorrect inferences from Step 1A
+   - Corrects any incorrect inferences from Step 2A
 
 4. **Industry Best Practices:**
    - Search query: *"Alarm rationalization guidelines for distillation columns ISA 18.2"*
@@ -230,7 +287,7 @@ The AI performs **targeted web searches** based on the initial analysis:
 }
 ```
 
-**Fallback behavior:** If web search fails or times out, the system uses the initial analysis from Step 1A.
+**Fallback behavior:** If web search fails or times out, the system uses the initial analysis from Step 2A.
 
 ---
 
@@ -269,63 +326,6 @@ With process analysis:
 - Cause: "Feed pump P-101 tripped on motor overload, likely due to bearing failure or seal leak (per API 610)"
 - Consequence: "Loss of feed to distillation column T-101 causes rapid level drop in reflux drum V-101, potential column dry-out and temperature excursion. Recovery time: 2-4 hours."
 - Action: "1) Check pump motor current and vibration at MCC-1. 2) Inspect pump seal and bearing condition. 3) Restart pump after fault cleared. 4) Monitor column temperature profile during recovery."
-
----
-
-### Phase 2: Philosophy Extraction
-
-**Purpose:** Extract the site's alarm management rules from their philosophy document.
-
-**Input:**
-- Alarm philosophy PDF (converted to text)
-- **Main D&R workflow**: No truncation - processes full PDFs
-- **Chatbot feature**: Truncates to 100,000 characters if needed (~75k tokens)
-- **User notification**: Displays warning if document was truncated (e.g., "⚠️ 85% of content processed")
-
-**Token capacity:** Azure OpenAI 128k context window allows processing large philosophy documents (100+ pages)
-
-**AI Task:**
-Parse the document to extract:
-- **Priority Matrix:** Consequence severity vs. Response time → Priority level
-- **Severity Matrix:** Impact category (Personnel, Environment, Financial) definitions
-- **Site Rules:** Specific policies (e.g., "All bypass alarms = Priority 3")
-
-**Prompt File:** `server/prompts/philosophy-extraction.js` (156 lines)
-
-**Output Example:**
-```json
-{
-  "priority_matrix": [
-    {
-      "severity": "SEVERE",
-      "max_response_time": "<3 minutes",
-      "priority": "Emergency"
-    },
-    {
-      "severity": "MAJOR",
-      "max_response_time": "3 to 10 minutes",
-      "priority": "High"
-    }
-  ],
-  "severity_matrix": [
-    {
-      "impact_category": "Personnel",
-      "severity": "SEVERE",
-      "entry": "Serious injury or fatality"
-    }
-  ],
-  "rules": [
-    {
-      "id": "ALM-005",
-      "category": "ESD Bypass",
-      "rule": "All ESD bypass alarms shall be Priority 3 or Diagnostic",
-      "source": ["Section 4.2"]
-    }
-  ]
-}
-```
-
-**How it's used:** The priority matrix and rules are injected into batch rationalization to ensure the AI uses the **site's actual priority scheme** (not generic ISA 18.2 defaults).
 
 ---
 
