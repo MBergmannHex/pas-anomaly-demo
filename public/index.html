@@ -1182,27 +1182,19 @@
                             const savedConfig = localStorage.getItem('aiDrWizard_config');
                             if (savedConfig) {
                                 const config = JSON.parse(savedConfig);
+                                // Only restore lightweight UI prefs (large data lives in IndexedDB)
                                 setStep(config.step || 1);
-                                setPhilosophyRules(config.philosophyRules);
-                                setProcessContext(config.processContext || '');
-                                setPidImage(config.pidImage);
-                                setConsistencyResults(config.consistencyResults);
-                                setDraftResults(config.draftResults || []);
-                                setComplianceResults(config.complianceResults || []);
-                                setSelectedForDrafting(config.selectedForDrafting || []);
-                                setLogs(config.logs || []);
                                 setSortBy(config.sortBy || 'alpha');
                                 setCodeLetterSwitch(config.codeLetterSwitch || 2);
                                 setPriorityFilter(config.priorityFilter || 'all');
                                 setDistributionPriorityFilter(config.distributionPriorityFilter);
                                 setSelectedUnit(config.selectedUnit || 'all');
-                                setProcessAnalysis(config.processAnalysis);
                                 setParsingMode(config.parsingMode || 'auto');
                                 setTagExamples(config.tagExamples || []);
                                 setActiveRules(config.activeRules || []);
                                 setMadbFileName(config.madbFileName || '');
                                 setPhilosophyFileName(config.philosophyFileName || '');
-                                addLog('Restored previous session configuration');
+                                addLog('Restored previous session preferences');
                             }
 
                             // Restore large data from IndexedDB
@@ -1225,18 +1217,23 @@
                 React.useEffect(() => {
                     if (!appLoaded) return; // Don't overwrite with empty state during load
 
+                    // Only save lightweight UI prefs — large data (alarms, results, PDF, logs)
+                    // is excluded to avoid QuotaExceededError on large alarm databases.
                     const config = {
-                        step, philosophyRules, processContext, pidImage, consistencyResults,
-                        draftResults, complianceResults, selectedForDrafting, logs, sortBy,
-                        codeLetterSwitch, priorityFilter, distributionPriorityFilter, selectedUnit,
-                        processAnalysis, parsingMode, tagExamples, activeRules, madbFileName, philosophyFileName
+                        step, sortBy, codeLetterSwitch, priorityFilter,
+                        distributionPriorityFilter, selectedUnit, parsingMode,
+                        tagExamples, activeRules, madbFileName, philosophyFileName
                     };
                     try {
                         localStorage.setItem('aiDrWizard_config', JSON.stringify(config));
                     } catch (e) {
-                        console.error("Failed to save config state", e);
+                        if (e.name === 'QuotaExceededError') {
+                            console.warn('[Config] localStorage quota exceeded - UI preferences will not persist across reloads');
+                        } else {
+                            console.error("Failed to save config state", e);
+                        }
                     }
-                }, [step, philosophyRules, processContext, pidImage, consistencyResults, draftResults, complianceResults, selectedForDrafting, logs, sortBy, codeLetterSwitch, priorityFilter, distributionPriorityFilter, selectedUnit, processAnalysis, parsingMode, tagExamples, activeRules, madbFileName, philosophyFileName, appLoaded]);
+                }, [step, sortBy, codeLetterSwitch, priorityFilter, distributionPriorityFilter, selectedUnit, parsingMode, tagExamples, activeRules, madbFileName, philosophyFileName, appLoaded]);
 
                 // Save MADB data to IndexedDB on change
                 React.useEffect(() => {
