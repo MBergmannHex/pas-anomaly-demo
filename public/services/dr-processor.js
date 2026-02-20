@@ -27,58 +27,6 @@ window.drProcessor = {
         'none': 6, 'no alarm': 6, 'remove': 7
     },
 
-    // Alarm Display Name Dictionary - provides AI with domain knowledge
-    ALARM_DISPLAY_NAMES: {
-        "ABORT": { description: "Sequence Abort. The logic sequence or batch phase has been forced to stop execution immediately, often due to a safety condition or operator command.", synonyms: ["SEQ_ABORT", "Phase Abort"] },
-        "ADVDEV": { description: "Advisory Deviation. The difference between the Process Variable (PV) and the Setpoint (SP) has exceeded a limit intended for operator advisory rather than critical action.", synonyms: ["ADVD", "Advisory Dev"] },
-        "BAD PV": { description: "Bad Process Variable. The input signal from the sensor is invalid, out of range, or has bad status (e.g., broken wire, transmitter failure).", synonyms: ["Bad Input", "Sensor Fail", "BAD_PV"] },
-        "BADCTL": { description: "Bad Control. The control loop cannot execute properly, often because a secondary input is bad, the slot is inactive, or the output hardware is failing.", synonyms: ["Bad Control Action", "Loop Broken"] },
-        "CHGOFST": { description: "Change of State. An alarm event triggered whenever a discrete signal transitions between current and new state. Change of state alarms are often inappropriate because at least one state typically does not indicate an abnormal condition requiring operator action.", synonyms: ["State Change", "COS", "Discrete Change"] },
-        "CMDDIS": { description: "Command Disagree. The controller commanded a device (e.g., valve) to a state, but the feedback signal did not match the command within the specified time (e.g., Valve told to Open, but Limit Switch says Closed).", synonyms: ["Command Mismatch", "Valve Stiction", "Travel Alarm", "CMD_DIS"] },
-        "CMFAIL": { description: "Command Fail. The output command could not be successfully transmitted or executed by the hardware/interface.", synonyms: ["CMD_FAIL", "Output Fail"] },
-        "DEV": { description: "Deviation Alarm. The difference between the Process Variable (PV) and the Setpoint (SP) exceeds the configured deviation limit.", synonyms: ["DEV_ALM", "Error Alarm"] },
-        "DEVCTLA.OFFNRMPVALM": { description: "Device Control A - Off Normal PV Alarm. A specific control module (DEVCTLA) is reporting that its process variable is not in the expected 'Normal' state (e.g., a valve is open when it should be closed).", synonyms: ["Device Off Normal", "State Mismatch"] },
-        "DEVCTLA_B3.OFFNRMPVALM": { description: "Device Control B3 - Off Normal PV Alarm. Instance 'B3' of the Device Control module is in an off-normal state.", synonyms: ["Unit B3 Off Normal"] },
-        "DEVCTLA_B3_ANL.OFFNRMPVALM": { description: "Device Control B3 Analog - Off Normal PV Alarm. The analog component of the B3 Device Control module is in an off-normal state.", synonyms: ["B3 Analog Off Normal"] },
-        "DEVCTLA_OME.OFFNRMPVALM": { description: "Device Control OME - Off Normal PV Alarm. Instance 'OME' of the Device Control module is in an off-normal state.", synonyms: ["OME Off Normal"] },
-        "DEVCTLA_P5.OFFNRMPVALM": { description: "Device Control P5 - Off Normal PV Alarm. Instance 'P5' (likely Pump 5) of the Device Control module is in an off-normal state.", synonyms: ["Pump 5 Off Normal"] },
-        "DEVCTLA_P5_ANL.OFFNRMPVALM": { description: "Device Control P5 Analog - Off Normal PV Alarm. The analog component of the P5 Device Control module is in an off-normal state.", synonyms: ["P5 Analog Off Normal"] },
-        "DEVCTLA_P9.OFFNRMPVALM": { description: "Device Control P9 - Off Normal PV Alarm. Instance 'P9' (likely Pump 9) of the Device Control module is in an off-normal state.", synonyms: ["Pump 9 Off Normal"] },
-        "DEVCTLA_R3.OFFNRMPVALM": { description: "Device Control R3 - Off Normal PV Alarm. Instance 'R3' (likely Reactor 3) of the Device Control module is in an off-normal state.", synonyms: ["R3 Off Normal"] },
-        "DEVCTLA_R4.OFFNRMPVALM": { description: "Device Control R4 - Off Normal PV Alarm. Instance 'R4' (likely Reactor 4) of the Device Control module is in an off-normal state.", synonyms: ["R4 Off Normal"] },
-        "DEVCTLA_R6.OFFNRMPVALM": { description: "Device Control R6 - Off Normal PV Alarm. Instance 'R6' (likely Reactor 6) of the Device Control module is in an off-normal state.", synonyms: ["R6 Off Normal"] },
-        "DEVCTLA_SS4.OFFNRMPVALM": { description: "Device Control SS4 - Off Normal PV Alarm. Instance 'SS4' (likely Sub-System 4) of the Device Control module is in an off-normal state.", synonyms: ["SS4 Off Normal"] },
-        "DEVCTLA_SS45.OFFNRMPVALM": { description: "Device Control SS45 - Off Normal PV Alarm. Instance 'SS45' of the Device Control module is in an off-normal state.", synonyms: ["SS45 Off Normal"] },
-        "DEVCTLA_SS54.OFFNRMPVALM": { description: "Device Control SS54 - Off Normal PV Alarm. Instance 'SS54' of the Device Control module is in an off-normal state.", synonyms: ["SS54 Off Normal"] },
-        "DEVCTLA_T3.OFFNRMPVALM": { description: "Device Control T3 - Off Normal PV Alarm. Instance 'T3' (likely Tank 3) of the Device Control module is in an off-normal state.", synonyms: ["Tank 3 Off Normal"] },
-        "DEVCTLA_T3_ANL.OFFNRMPVALM": { description: "Device Control T3 Analog - Off Normal PV Alarm. The analog component of the T3 Device Control module is in an off-normal state.", synonyms: ["T3 Analog Off Normal"] },
-        "DEVCTLA_T4.OFFNRMPVALM": { description: "Device Control T4 - Off Normal PV Alarm. Instance 'T4' (likely Tank 4) of the Device Control module is in an off-normal state.", synonyms: ["Tank 4 Off Normal"] },
-        "DEVCTLA_T6.OFFNRMPVALM": { description: "Device Control T6 - Off Normal PV Alarm. Instance 'T6' (likely Tank 6) of the Device Control module is in an off-normal state.", synonyms: ["Tank 6 Off Normal"] },
-        "DEVCTLA_U09.OFFNRMPVALM": { description: "Device Control U09 - Off Normal PV Alarm. Instance 'U09' (likely Unit 09) of the Device Control module is in an off-normal state.", synonyms: ["Unit 09 Off Normal"] },
-        "DEVHI": { description: "Deviation High. The Process Variable (PV) is higher than the Setpoint (SP) by an amount exceeding the High Deviation limit.", synonyms: ["DEV_HI", "High Deviation", "+DEV"] },
-        "DEVLOW": { description: "Deviation Low. The Process Variable (PV) is lower than the Setpoint (SP) by an amount exceeding the Low Deviation limit.", synonyms: ["DEV_LO", "Low Deviation", "-DEV"] },
-        "FAIL": { description: "Module Failure. A generic failure alarm indicating the control module, device, or hardware slot has failed.", synonyms: ["FAILURE", "HW_FAIL"] },
-        "FLOWCOMPA.BADCOMPTERM": { description: "Flow Compensation A - Bad Compensation Term. A standard flow compensation block cannot calculate the corrected flow because one of its compensation inputs (usually Temperature or Pressure) has a 'Bad' status.", synonyms: ["Bad Comp Input", "Flow Calc Error"] },
-        "HOLD": { description: "Sequence Hold. The automated sequence has been paused (held) and is waiting for an operator command to resume or abort.", synonyms: ["PAUSED", "Held"] },
-        "OFFNRM": { description: "Off Normal. A discrete device is in a state other than its configured 'Normal' state (e.g., a switch configured to be normally Closed is now Open).", synonyms: ["Not Normal", "Unexpected State", "OFF_NORMAL"] },
-        "OPHIGH": { description: "Output High Limit. The controller output (OP) has reached its maximum high limit (usually 100%). The loop is now saturated high.", synonyms: ["OPH", "Out High", "Windup High"] },
-        "OPLOW": { description: "Output Low Limit. The controller output (OP) has reached its minimum low limit (usually 0%). The loop is now saturated low.", synonyms: ["OPL", "Out Low", "Windup Low"] },
-        "OVRDI0": { description: "Override Interlock 0. An override logic condition (Input 0) is active, forcing the controller or device into a safe or fallback state.", synonyms: ["Override 0", "Interlock Active"] },
-        "OVRDI1": { description: "Override Interlock 1. An override logic condition (Input 1) is active.", synonyms: ["Override 1"] },
-        "OVRDI2": { description: "Override Interlock 2. An override logic condition (Input 2) is active.", synonyms: ["Override 2"] },
-        "OVRDSI": { description: "Override Select Input. The controller has automatically switched to a different input source or control strategy due to an override condition.", synonyms: ["Override Select", "Sel Input"] },
-        "PVHIGH": { description: "Process Variable High. The PV has exceeded the configured High Alarm limit.", synonyms: ["PV_HI", "High Alarm"] },
-        "PVHIHI": { description: "Process Variable High-High. The PV has exceeded the Critical High (High-High) limit. Usually indicates a trip condition or safety hazard.", synonyms: ["PV_HH", "Critical High", "HiHi"] },
-        "PVLOLO": { description: "Process Variable Low-Low. The PV has dropped below the Critical Low (Low-Low) limit. Usually indicates a trip condition or safety hazard.", synonyms: ["PV_LL", "Critical Low", "LoLo"] },
-        "PVLOW": { description: "Process Variable Low. The PV has dropped below the configured Low Alarm limit.", synonyms: ["PV_LO", "Low Alarm"] },
-        "ROCNEG": { description: "Rate of Change Negative. The PV is decreasing faster than the allowed negative rate limit.", synonyms: ["ROC Down", "Fall Rate Limit"] },
-        "ROCPOS": { description: "Rate of Change Positive. The PV is increasing faster than the allowed positive rate limit.", synonyms: ["ROC Up", "Rise Rate Limit"] },
-        "STEPTO": { description: "Step Timeout. A step in a batch or logic sequence has taken longer than the configured maximum time to complete.", synonyms: ["Sequence Timeout", "Phase Timeout"] },
-        "STOP": { description: "Sequence Stop. The sequence has completed or has been stopped.", synonyms: ["SEQ_STOP"] },
-        "UNCMD": { description: "Uncommanded Change. A field device (like a valve or motor) changed its state (e.g., Closed to Open) without receiving a command from the control system.", synonyms: ["Uncommanded Motion", "UCMD", "Drift"] },
-        "UNCMDCHG": { description: "Uncommanded Change. The device changed state without a system command. Identical to UNCMD.", synonyms: ["Uncommanded Change", "Ghost Operation"] }
-    },
-
     // Detected priority scheme (set during CSV parsing)
     detectedPriorityScheme: null,
 
@@ -205,95 +153,26 @@ window.drProcessor = {
     },
 
     /**
-     * Generate a parsing rule from a user-provided example
-     * @param {string} fullTag - The complete tag (e.g., "TI200A", "FIC-101")
-     * @param {string} prefix - User-identified prefix (e.g., "TI", "FIC")
-     * @returns {Object} Rule object with type and parsing instructions
+     * Derive a consolidated parsing rule from multiple examples.
+     * Logic runs server-side; calls /api/analysis/derive-rule.
+     * @param {Array} examples - Array of { tag, prefix } objects
+     * @returns {Promise<Object>} Rule object
      */
-    deriveConsolidatedRule(examples) {
+    async deriveConsolidatedRule(examples) {
         if (!examples || examples.length === 0) return null;
-
-        // Filter valid examples that roughly match the structure
         const validExamples = examples.filter(e => e.tag && e.prefix);
         if (validExamples.length === 0) return null;
 
-        // Strategy 1: Common Delimiter
-        // Check if all examples split by the same delimiter match the prefix
-        const delimiters = ['-', '_', '.', '/', ':'];
-        for (const char of delimiters) {
-            const allMatch = validExamples.every(e => {
-                const parts = e.tag.split(char);
-                // Check if any part matches the prefix (to support 10-FI-001 -> FI)
-                return parts.some(p => p.trim().toUpperCase() === e.prefix.trim().toUpperCase());
-            });
-
-            if (allMatch) {
-                // If the prefix is always the FIRST part, standard delimiter rule
-                const allFirst = validExamples.every(e => e.tag.split(char)[0].trim().toUpperCase() === e.prefix.trim().toUpperCase());
-                if (allFirst) {
-                    return { type: 'delimiter', char: char, description: `Split by '${char}'` };
-                }
-                // Otherwise custom regex to find the part
-                return {
-                    type: 'regex',
-                    regex: `(?:^|[${char}])([A-Za-z0-9]+)(?:$|[${char}])`, // Match between delimiters
-                    // We need to return the group that matches the prefix structure. 
-                    // This is getting complex. Let's stick to standard delimiter if first part.
-                    description: `Contains part separated by '${char}'`
-                };
-            }
-        }
-
-        // Strategy 2: Alpha/Numeric Boundary (Letters before Digits)
-        // Use leadingLetters type for reliable extraction without regex
-        const allLettersBeforeDigits = validExamples.every(e => {
-            // Manual check: extract leading letters and compare
-            let extractedPrefix = '';
-            for (const char of e.tag.toUpperCase()) {
-                if (char >= 'A' && char <= 'Z') {
-                    extractedPrefix += char;
-                } else {
-                    break;
-                }
-            }
-            return extractedPrefix === e.prefix.trim().toUpperCase();
-        });
-        if (allLettersBeforeDigits) {
-            return { type: 'leadingLetters', description: 'Extract leading letters' };
-        }
-
-        // Strategy 3: Fixed Length
-        const firstLen = validExamples[0].prefix.length;
-        const allSameLength = validExamples.every(e => e.prefix.length === firstLen && e.tag.toUpperCase().startsWith(e.prefix.toUpperCase()));
-        if (allSameLength) {
-            return { type: 'fixedLength', length: firstLen, description: `First ${firstLen} characters` };
-        }
-
-        // Strategy 4: Specific Segment
-        // Check if the prefix always matches the Nth segment (e.g. 3rd segment for T4PI30171C -> PI)
-        // We check indices 1 to 10
-        for (let i = 1; i <= 10; i++) {
-            const allMatch = validExamples.every(e => {
-                const segs = this.splitTagIntoSegments(e.tag);
-                // Convert 1-based index to 0-based
-                const seg = segs[i - 1];
-                return seg && seg.toUpperCase() === e.prefix.toUpperCase();
-            });
-
-            if (allMatch) {
-                return {
-                    type: 'segments',
-                    prefixSegment: i,
-                    description: `Segment ${i} (after ${i - 1} switches)`
-                };
-            }
-        }
-
-        // Fallback: Generate rule from the first example
         try {
-            return this.generateParsingRule(validExamples[0].tag, validExamples[0].prefix);
-        } catch (e) {
-            // If even the first one fails strict checks, return a catch-all
+            const response = await fetch('/api/analysis/derive-rule', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ examples: validExamples })
+            });
+            if (!response.ok) throw new Error(`derive-rule failed: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error('[DrProcessor] deriveConsolidatedRule error:', error);
             return { type: 'leadingLetters', description: 'Default (Leading Letters)' };
         }
     },
@@ -743,81 +622,26 @@ window.drProcessor = {
     },
 
     /**
-     * Detect unique tag patterns from alarm data
-     * Analyzes tags to find different naming conventions and returns representative examples
+     * Detect unique tag patterns from alarm data.
+     * Logic runs server-side; calls /api/analysis/detect-patterns.
      * @param {Array} data - Array of alarm records with Tag field
      * @param {number} maxExamples - Maximum number of examples to return (default 5)
-     * @returns {Array} Array of { tag, suggestedPrefix, pattern } objects
+     * @returns {Promise<Array>} Array of { tag, suggestedPrefix, pattern, count } objects
      */
-    detectTagPatterns(data, maxExamples = 5) {
+    async detectTagPatterns(data, maxExamples = 5) {
         if (!data || !Array.isArray(data) || data.length === 0) return [];
-
-        // Collect all unique tags
-        const allTags = [...new Set(data.map(row => (row.Tag || row.tag || '').trim()).filter(t => t))];
-        if (allTags.length === 0) return [];
-
-        // Analyze each tag to determine its pattern signature
-        const patternMap = new Map(); // pattern signature -> { tag, prefix, count }
-
-        allTags.forEach(tag => {
-            const upperTag = tag.toUpperCase();
-
-            // Determine pattern signature
-            let signature = '';
-            let suggestedPrefix = '';
-
-            // Check for delimiter-based patterns (TI-101, FIC_200, etc.)
-            const delimiterMatch = upperTag.match(/^([A-Za-z]+)([-_./])(\d)/);
-            if (delimiterMatch) {
-                signature = `letters${delimiterMatch[2]}numbers`;
-                suggestedPrefix = delimiterMatch[1];
-            } else {
-                // Check for alpha-numeric boundary (TI101, FIC200)
-                const alphaNumMatch = upperTag.match(/^([A-Za-z]+)(\d)/);
-                if (alphaNumMatch) {
-                    const letters = alphaNumMatch[1];
-                    // Create signature based on prefix length to distinguish patterns
-                    signature = `letters${letters.length}_then_numbers`;
-                    suggestedPrefix = letters;
-                } else {
-                    // Check for all letters or other unusual patterns
-                    const allLettersMatch = upperTag.match(/^([A-Za-z]+)$/);
-                    if (allLettersMatch) {
-                        signature = 'all_letters';
-                        suggestedPrefix = upperTag.substring(0, 2); // First 2 chars
-                    } else {
-                        // Mixed or unusual pattern
-                        signature = 'other_' + upperTag.substring(0, 3);
-                        suggestedPrefix = upperTag.substring(0, 2);
-                    }
-                }
-            }
-
-            // Track by pattern signature
-            if (!patternMap.has(signature)) {
-                patternMap.set(signature, {
-                    tag: tag, // Original case
-                    suggestedPrefix: suggestedPrefix,
-                    pattern: signature,
-                    count: 1
-                });
-            } else {
-                patternMap.get(signature).count++;
-            }
-        });
-
-        // Convert to array, sort by frequency (most common patterns first), take top N
-        const patterns = Array.from(patternMap.values())
-            .sort((a, b) => b.count - a.count)
-            .slice(0, maxExamples)
-            .map(p => ({
-                tag: p.tag,
-                suggestedPrefix: p.suggestedPrefix,
-                pattern: p.pattern,
-                count: p.count
-            }));
-
-        return patterns;
+        try {
+            const response = await fetch('/api/analysis/detect-patterns', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data, maxExamples })
+            });
+            if (!response.ok) throw new Error(`detect-patterns failed: ${response.status}`);
+            return await response.json();
+        } catch (error) {
+            console.error('[DrProcessor] detectTagPatterns error:', error);
+            return [];
+        }
     },
 
     // ============================================
@@ -1835,26 +1659,34 @@ Return a merged, enriched JSON object with the SAME structure as the input, but 
         const relevantPrevious = previousResults.filter(r => currentTags.has(r.alarm.Tag || r.alarm.tag));
 
         // Call backend API with structured data (backend assembles the prompt)
-        const response = await fetch('/api/dr/batch-rationalize', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                alarms: alarms,
-                processContext: processContext,
-                philosophyRules: philosophyRules,
-                processAnalysis: processAnalysis,
-                referenceAlarms: drCompleteExamples,
-                previousDrafts: relevantPrevious,
-                detectedPriorityScheme: this.detectedPriorityScheme || 'numeric',
-                pidImageBase64: imageBase64,
-                modelConfig: {
-                    deploymentType: 'dr',
-                    reasoningEffort: window.chatbotService.config.reasoningEffort
-                },
-                maxTokens: 32000,
-                temperature: 0.2
-            })
-        });
+        let response;
+        try {
+            response = await fetch('/api/dr/batch-rationalize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    alarms: alarms,
+                    processContext: processContext,
+                    philosophyRules: philosophyRules,
+                    processAnalysis: processAnalysis,
+                    referenceAlarms: drCompleteExamples,
+                    previousDrafts: relevantPrevious,
+                    detectedPriorityScheme: this.detectedPriorityScheme || 'numeric',
+                    pidImageBase64: imageBase64,
+                    modelConfig: {
+                        deploymentType: 'dr',
+                        reasoningEffort: window.chatbotService.config.reasoningEffort
+                    },
+                    maxTokens: 32000,
+                    temperature: 0.2
+                })
+            });
+        } catch (fetchError) {
+            if (fetchError instanceof TypeError) {
+                throw new Error('Session expired — please refresh the page to re-authenticate.');
+            }
+            throw fetchError;
+        }
 
         if (!response.ok) {
             const errorData = await response.json();

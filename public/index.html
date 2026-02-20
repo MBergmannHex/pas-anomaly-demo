@@ -761,11 +761,11 @@
                     const stats = window.statsService.calculateStatistics(cleanData, validSessionsFiltered);
                     setStatistics(stats);
 
-                    const nuisanceAnalysis = window.rationalizationService.analyzeNuisanceAlarms(cleanData, validSessionsFiltered, allSessions);
+                    const nuisanceAnalysis = await window.rationalizationService.analyzeNuisanceAlarms(cleanData, validSessionsFiltered, allSessions);
                     setNuisanceAlarms(nuisanceAnalysis.alarms);
                     setAlarmHealthMetrics(nuisanceAnalysis.metrics);
 
-                    const variants = window.processMiningService.discoverProcessVariants(validSessionsFiltered);
+                    const variants = await window.processMiningService.discoverProcessVariants(validSessionsFiltered);
                     setProcessVariants(variants);
 
                     if (cleanData.length > 0) {
@@ -1256,7 +1256,7 @@
                         setMadbData(data);
 
                         // Detect tag patterns and prefill examples
-                        const detectedPatterns = window.drProcessor.detectTagPatterns(data, 5);
+                        const detectedPatterns = await window.drProcessor.detectTagPatterns(data, 5);
                         if (detectedPatterns.length > 0) {
                             const examples = detectedPatterns.map(p => ({
                                 tag: p.tag,
@@ -2807,7 +2807,7 @@
                 return `[E] ${event.tag}`;
             };
 
-            const applyProcessFilters = () => {
+            const applyProcessFilters = async () => {
                 if (!validSessions) return;
 
                 let filteredSessions = validSessions;
@@ -2843,13 +2843,13 @@
                     }
                 }
 
-                const graph = window.processMiningService.buildProcessGraph(
+                const graph = await window.processMiningService.buildProcessGraph(
                     filteredSessions.slice(0, 500),
                     heuristicFilters
                 );
                 setFilteredProcessGraph(graph);
 
-                const { dfg, dfgVisual, stats } = window.processMiningService.createDFG(filteredSessions);
+                const { dfg, dfgVisual, stats } = await window.processMiningService.createDFG(filteredSessions);
                 setDfgData({ dfg, dfgVisual });
                 setProcessStats(stats);
             };
