@@ -1,7 +1,7 @@
 'use strict';
 /**
  * Analysis Routes - Pure algorithmic endpoints (no OpenAI)
- * Serves server-side IP: tag intelligence, nuisance scoring, process mining
+ * Serves server-side IP: tag intelligence, nuisance scoring, process mining, session extraction
  */
 
 const express = require('express');
@@ -9,6 +9,7 @@ const router = express.Router();
 const ai = require('../utils/alarm-intelligence');
 const nuisance = require('../utils/nuisance-scoring');
 const pm = require('../utils/process-mining');
+const se = require('../utils/session-extraction');
 
 /**
  * POST /api/analysis/detect-patterns
@@ -113,6 +114,26 @@ router.post('/process-mine', (req, res, next) => {
         }
 
         res.json(result);
+    } catch (error) {
+        next(error);
+    }
+});
+
+/**
+ * POST /api/analysis/extract-sessions
+ * Extracts alarm sessions from event data using concurrent unit tracking algorithm.
+ * Returns sessions and pre-computed unit statistics in one call.
+ * Body: { data: EventRecord[] }
+ */
+router.post('/extract-sessions', (req, res, next) => {
+    try {
+        const { data } = req.body;
+        if (!data || !Array.isArray(data)) {
+            return res.status(400).json({ error: 'data array is required' });
+        }
+        const sessions = se.extractSessions(data);
+        const unitStatistics = se.getUnitStatistics(sessions);
+        res.json({ sessions, unitStatistics });
     } catch (error) {
         next(error);
     }

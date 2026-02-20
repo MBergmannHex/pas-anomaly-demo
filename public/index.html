@@ -747,7 +747,7 @@
                     const cleanData = await window.dataService.processDataWithMappings(rawData, mappings);
                     setData(cleanData);
 
-                    const allSessions = window.sessionService.extractSessions(cleanData);
+                    const allSessions = await window.sessionService.extractSessions(cleanData);
                     setSessions(allSessions);
 
                     const validSessionsFiltered = allSessions;
