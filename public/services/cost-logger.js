@@ -6,16 +6,27 @@
 const COST_LOGGING_ENABLED = true;
 
 // Pricing per 1M tokens: [input $, output $]
-// Source: Azure OpenAI / OpenAI list pricing (update if your contract differs)
+// Source: OpenAI list pricing — update if your Azure contract differs
+// Note: Batch API gives 50% off, Prompt Caching gives 75-90% off cached input tokens
 const MODEL_PRICING = {
-    'gpt-4.1':      [2.00,  8.00],
-    'gpt-4.1-mini': [0.40,  1.60],
-    'gpt-4o':       [2.50, 10.00],
-    'gpt-4o-mini':  [0.15,  0.60],
-    'o1':           [15.00, 60.00],
-    'o3':           [10.00, 40.00],
-    'o3-mini':      [1.10,  4.40],
-    'o4-mini':      [1.10,  4.40],
+    // GPT-5 family
+    'gpt-5.2':          [1.75, 14.00],  // Best for coding, complex agentic tasks
+    'gpt-5':            [1.75, 14.00],  // Alias
+
+    // GPT-4.1 family
+    'gpt-4.1-nano':     [0.02,  0.15],  // High-volume, budget-sensitive tasks
+    'gpt-4.1-mini':     [0.40,  1.60],  // Balanced cost/performance
+    'gpt-4.1':          [2.00,  8.00],  // Long-context, instruction-following
+
+    // GPT-4o family
+    'gpt-4o-mini':      [0.15,  0.60],
+    'gpt-4o':           [2.50, 10.00],
+
+    // o-series reasoning models
+    'o4-mini':          [1.10,  4.40],
+    'o3-mini':          [1.10,  4.40],
+    'o3':               [10.00, 40.00],
+    'o1':               [15.00, 60.00],
 };
 
 window.costLogger = {
