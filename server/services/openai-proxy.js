@@ -103,7 +103,8 @@ class OpenAIProxy {
 
         return {
             content: data.choices?.[0]?.message?.content || '',
-            usage: data.usage || {}
+            usage: data.usage || {},
+            deployment
         };
     }
 
@@ -185,7 +186,8 @@ class OpenAIProxy {
         // Response is already in Responses API format
         return {
             output: data.output || [],
-            usage: data.usage || {}
+            usage: data.usage || {},
+            deployment
         };
     }
 

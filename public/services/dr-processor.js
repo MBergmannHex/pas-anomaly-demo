@@ -1061,6 +1061,7 @@ ${safeSampleAlarms}
 
         // Parse response from backend
         const responseData = await response.json();
+        window.costLogger?.log('Process Analysis (Step 1)', responseData.deployment, responseData.usage);
 
         // Find the message output
         const messageOutput = responseData.output?.find(item => item.type === 'message');
@@ -1199,6 +1200,7 @@ Return a merged, enriched JSON object with the SAME structure as the input, but 
             }
 
             const data = await response.json();
+            window.costLogger?.log('Web Search Enrichment (Step 2)', data.deployment, data.usage);
             console.log('[DrProcessor] Web Search Enrichment Response:', data);
 
             // Extract content with support for both standard ChatCompletion and Responses API (output array)
@@ -1365,6 +1367,7 @@ Return a merged, enriched JSON object with the SAME structure as the input, but 
         }
 
         const data = await response.json();
+        window.costLogger?.log('Philosophy Extraction', data.deployment, data.usage);
         let content = data.content;
 
         // Robust JSON Extraction
@@ -1613,6 +1616,7 @@ Return a merged, enriched JSON object with the SAME structure as the input, but 
             throw new Error('Azure OpenAI is not configured.');
         }
 
+        window.costLogger?.reset();
         const results = [];
         const BATCH_SIZE = 10;
         const batches = [];
@@ -1645,6 +1649,7 @@ Return a merged, enriched JSON object with the SAME structure as the input, but 
             }
         }
 
+        window.costLogger?.summary();
         return results;
     },
 
@@ -1694,6 +1699,8 @@ Return a merged, enriched JSON object with the SAME structure as the input, but 
         }
 
         const data = await response.json();
+        const batchNum = (window.costLogger?._session?.calls?.filter(c => c.step.startsWith('Batch')).length ?? 0) + 1;
+        window.costLogger?.log(`Batch ${batchNum} Rationalization`, data.deployment, data.usage);
         let content = data.content;
         content = content.replace(/```json/g, '').replace(/```/g, '').trim();
 
