@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
@@ -52,7 +52,7 @@
             flex: 1;
             overflow-y: auto;
             padding: 1rem;
-            background-color: #f9fafb;
+            background-color: var(--bg-primary);
         }
 
         .chat-message {
@@ -75,40 +75,42 @@
             /* Increased width for better readability */
             padding: 1rem;
             border-radius: 0.5rem;
-            background-color: white;
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            box-shadow: 0 1px 2px var(--shadow-color);
             position: relative;
             line-height: 1.5;
         }
 
         .chat-message.user .chat-message-content {
-            background-color: #667eea;
+            background-color: var(--accent-primary);
             color: white;
         }
 
         .chat-message.assistant .chat-message-content {
-            background-color: white;
-            border: 1px solid #e5e7eb;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
         }
 
         .chat-input-container {
             padding: 1rem;
-            background-color: white;
-            border-top: 1px solid #e5e7eb;
+            background-color: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
         }
 
         .chat-suggestions {
             padding: 0.5rem 1rem;
-            background-color: #f3f4f6;
-            border-top: 1px solid #e5e7eb;
+            background-color: var(--bg-secondary);
+            border-top: 1px solid var(--border-color);
         }
 
         .suggestion-chip {
             display: inline-block;
             padding: 0.25rem 0.75rem;
             margin: 0.25rem;
-            background-color: white;
-            border: 1px solid #d1d5db;
+            background-color: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
             border-radius: 9999px;
             font-size: 0.875rem;
             cursor: pointer;
@@ -116,49 +118,49 @@
         }
 
         .suggestion-chip:hover {
-            background-color: #667eea;
+            background-color: var(--accent-primary);
             color: white;
-            border-color: #667eea;
+            border-color: var(--accent-primary);
         }
 
         /* Thought Process Styles */
         .thought-process-container {
             max-width: 90%;
             margin-bottom: 0.5rem;
-            border: 1px solid #e5e7eb;
+            border: 1px solid var(--border-color);
             border-radius: 0.5rem;
-            background-color: #f8fafc;
+            background-color: var(--bg-card);
             overflow: hidden;
         }
 
         .thought-header {
             padding: 0.5rem 1rem;
-            background-color: #f1f5f9;
+            background-color: var(--bg-secondary);
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: space-between;
             font-size: 0.85rem;
-            color: #64748b;
+            color: var(--text-muted);
             font-weight: 500;
         }
 
         .thought-header:hover {
-            background-color: #e2e8f0;
+            background-color: var(--bg-hover);
         }
 
         .thought-content {
             padding: 0.75rem;
             font-size: 0.85rem;
-            color: #334155;
-            border-top: 1px solid #e5e7eb;
-            background-color: white;
+            color: var(--text-primary);
+            border-top: 1px solid var(--border-color);
+            background-color: var(--bg-card);
         }
 
         .thought-step {
             margin-bottom: 1rem;
             padding-left: 1rem;
-            border-left: 2px solid #cbd5e1;
+            border-left: 2px solid var(--border-color);
             position: relative;
         }
 
@@ -174,34 +176,28 @@
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background-color: #cbd5e1;
+            background-color: var(--color-gray-2);
         }
 
         .thought-step.intent::before {
-            background-color: #8b5cf6;
+            background-color: #9933FF; /* Octave purple */
         }
 
-        /* Purple */
         .thought-step.plan::before {
-            background-color: #3b82f6;
+            background-color: #00FFFF; /* Octave aqua */
         }
 
-        /* Blue */
         .thought-step.action::before {
-            background-color: #f59e0b;
+            background-color: #F46600; /* Octave orange */
         }
 
-        /* Amber */
         .thought-step.observation::before {
-            background-color: #10b981;
+            background-color: #00AA14; /* Octave dark green */
         }
 
-        /* Green */
         .thought-step.synthesis::before {
-            background-color: #ec4899;
+            background-color: #FF00C7; /* Octave pink */
         }
-
-        /* Pink */
 
         .thought-label {
             font-weight: 700;
@@ -213,37 +209,37 @@
         }
 
         .thought-step.intent .thought-label {
-            color: #7c3aed;
+            color: #9933FF;
         }
 
         .thought-step.plan .thought-label {
-            color: #2563eb;
+            color: #00FFFF;
         }
 
         .thought-step.action .thought-label {
-            color: #d97706;
+            color: #F46600;
         }
 
         .thought-step.observation .thought-label {
-            color: #059669;
+            color: #00AA14;
         }
 
         .thought-step.synthesis .thought-label {
-            color: #db2777;
+            color: #FF00C7;
         }
 
         .typing-indicator {
             display: inline-flex;
             align-items: center;
             padding: 0.5rem 1rem;
-            background-color: #e5e7eb;
+            background-color: var(--bg-secondary);
             border-radius: 1rem;
         }
 
         .typing-indicator span {
             height: 0.5rem;
             width: 0.5rem;
-            background-color: #6b7280;
+            background-color: var(--text-muted);
             border-radius: 50%;
             display: inline-block;
             margin: 0 0.1rem;
@@ -273,8 +269,8 @@
 
         /* Insight Card & Modal Styles */
         .insight-card {
-            background-color: #eff6ff;
-            border: 1px solid #bfdbfe;
+            background-color: var(--bg-card);
+            border: 1px solid var(--color-accent-aqua);
             border-radius: 0.5rem;
             padding: 1rem;
             margin-bottom: 1.5rem;
@@ -285,7 +281,7 @@
             display: flex;
             align-items: center;
             margin-bottom: 0.5rem;
-            color: #1e40af;
+            color: var(--color-accent-aqua);
         }
 
         .insight-card-title {
@@ -297,7 +293,7 @@
             position: absolute;
             top: 0.5rem;
             right: 0.5rem;
-            color: #93c5fd;
+            color: var(--text-muted);
             cursor: pointer;
         }
 

@@ -1,34 +1,69 @@
 /* ============================================
-   Theme Variables - Light/Dark Mode Support
+   Octave Design Tokens + App Theme Variables
    ============================================ */
 :root {
-    /* Light theme (default) */
-    --bg-primary: #f8fafc;
-    --bg-secondary: #ffffff;
-    --bg-card: #ffffff;
-    --bg-hover: #f3f4f6;
-    --text-primary: #1f2937;
-    --text-secondary: #6b7280;
-    --text-muted: #9ca3af;
-    --border-color: #e5e7eb;
-    --accent-primary: #667eea;
-    --accent-secondary: #764ba2;
-    --shadow-color: rgba(0, 0, 0, 0.1);
+    /* Octave brand tokens */
+    --color-black:          #1A1A1F;
+    --color-white:          #FFFFFF;
+    --color-gray-1:         #E7EBF2;
+    --color-gray-2:         #CBD0D8;
+    --color-gray-3:         #B2B8C4;
+    --color-gray-4:         #6F7480;
+    --color-gray-5:         #3E4047;
+    --color-accent-pink:    #FF00C7;
+    --color-accent-orange:  #F46600;
+    --color-accent-purple:  #9933FF;
+    --color-accent-blue:    #0000FF;
+    --color-accent-aqua:    #00FFFF;
+    --color-accent-green:   #4FFF00;
+    --color-accent-dark-green: #00AA14;
+    --color-accent-yellow:  #FFF500;
+    --gradient-primary:     linear-gradient(135deg, #FF00C7, #F46600);
+    --gradient-secondary:   linear-gradient(135deg, #0000FF, #9933FF);
+    --gradient-green-aqua:  linear-gradient(135deg, #4FFF00, #00FFFF);
+
+    /* Light theme defaults (Octave light mode) */
+    --bg-primary:    #FFFFFF;
+    --bg-secondary:  #E7EBF2;
+    --bg-card:       #FFFFFF;
+    --bg-hover:      #E7EBF2;
+    --text-primary:  #1A1A1F;
+    --text-secondary: #3E4047;
+    --text-muted:    #6F7480;
+    --border-color:  rgba(26, 26, 31, 0.12);
+    --accent-primary:   #9933FF;
+    --accent-secondary: #FF00C7;
+    --shadow-color:  rgba(0, 0, 0, 0.1);
 }
 
 [data-theme="dark"] {
-    /* Dark theme - inspired by reference design */
-    --bg-primary: #0f172a;
-    --bg-secondary: #1e293b;
-    --bg-card: #1e293b;
-    --bg-hover: #334155;
-    --text-primary: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
-    --border-color: #334155;
-    --accent-primary: #3b82f6;
-    --accent-secondary: #22d3ee;
-    --shadow-color: rgba(0, 0, 0, 0.3);
+    /* Octave dark mode — default theme */
+    --bg-primary:    #1A1A1F;
+    --bg-secondary:  #3E4047;
+    --bg-card:       #232329;
+    --bg-hover:      #3E4047;
+    --text-primary:  #FFFFFF;
+    --text-secondary: #B2B8C4;
+    --text-muted:    #6F7480;
+    --border-color:  rgba(255, 255, 255, 0.15);
+    --accent-primary:   #FF00C7;
+    --accent-secondary: #F46600;
+    --shadow-color:  rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="light"] {
+    /* Explicit light mode alias for toggle compatibility */
+    --bg-primary:    #FFFFFF;
+    --bg-secondary:  #E7EBF2;
+    --bg-card:       #FFFFFF;
+    --bg-hover:      #E7EBF2;
+    --text-primary:  #1A1A1F;
+    --text-secondary: #3E4047;
+    --text-muted:    #6F7480;
+    --border-color:  rgba(26, 26, 31, 0.12);
+    --accent-primary:   #9933FF;
+    --accent-secondary: #FF00C7;
+    --shadow-color:  rgba(0, 0, 0, 0.1);
 }
 
 /* Dark mode text contrast overrides */
@@ -83,14 +118,14 @@
    Base Styles
    ============================================ */
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    font-family: 'Aptos', 'Segoe UI', Arial, sans-serif;
     background-color: var(--bg-primary);
     color: var(--text-primary);
     transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .gradient-bg {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: var(--gradient-primary);
 }
 
 .card {
@@ -123,8 +158,8 @@ body {
 }
 
 .loading-spinner {
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #667eea;
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--accent-primary);
     border-radius: 50%;
     width: 40px;
     height: 40px;
@@ -148,7 +183,7 @@ body {
 }
 
 .tab-button.active {
-    background: #667eea;
+    background: var(--accent-primary);
     color: white;
 }
 
@@ -189,7 +224,7 @@ body {
 }
 
 .training-progress {
-    background: #e5e7eb;
+    background: var(--border-color);
     border-radius: 0.5rem;
     height: 0.75rem;
     overflow: hidden;
@@ -197,7 +232,7 @@ body {
 }
 
 .training-progress-bar {
-    background: #667eea;
+    background: var(--gradient-primary);
     height: 100%;
     transition: width 0.3s ease;
 }
@@ -256,8 +291,8 @@ body {
 }
 
 .process-variant {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
     border-radius: 0.5rem;
     padding: 1rem;
     margin-bottom: 0.5rem;
@@ -266,8 +301,8 @@ body {
 }
 
 .process-variant:hover {
-    border-color: #667eea;
-    background: #f3f4f6;
+    border-color: var(--accent-primary);
+    background: var(--bg-hover);
 }
 
 .response-recommendation {
@@ -284,8 +319,8 @@ body {
 }
 
 .tab-header {
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
     border-radius: 0.5rem;
     padding: 1rem;
     margin-bottom: 1rem;
@@ -293,9 +328,9 @@ body {
 
 #pm4js-container {
     width: 100%;
-    border: 1px solid #e5e7eb;
+    border: 1px solid var(--border-color);
     border-radius: 0.5rem;
-    background: white;
+    background: var(--bg-card);
     padding: 1rem;
 }
 
@@ -304,7 +339,7 @@ body {
 }
 
 .dfg-visualization h4 {
-    color: #374151;
+    color: var(--text-primary);
     margin-bottom: 0.75rem;
 }
 
@@ -316,8 +351,8 @@ body {
 }
 
 .process-stat-card {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
     border-radius: 0.5rem;
     padding: 1rem;
     text-align: center;
@@ -348,22 +383,22 @@ body {
 }
 
 .alarm-health-metric {
-    background: white;
+    background: var(--bg-card);
     border-radius: 0.5rem;
     padding: 1.5rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 1px 3px var(--shadow-color);
     text-align: center;
     transition: all 0.3s;
 }
 
 .alarm-health-metric:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px var(--shadow-color);
 }
 
 .rationalization-card {
-    background: white;
-    border: 1px solid #e5e7eb;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
     border-radius: 0.5rem;
     padding: 1.5rem;
     margin-bottom: 1rem;
@@ -371,12 +406,12 @@ body {
 }
 
 .rationalization-card:hover {
-    border-color: #667eea;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-color: var(--accent-primary);
+    box-shadow: 0 2px 4px var(--shadow-color);
 }
 
 .evidence-item {
-    background: #f9fafb;
+    background: var(--bg-secondary);
     border-radius: 0.375rem;
     padding: 0.5rem 1rem;
     margin: 0.25rem 0;
@@ -454,12 +489,12 @@ body {
 }
 
 .action-button.review {
-    background: #6366f1;
+    background: #9933FF;
     color: white;
 }
 
 .action-button.review:hover {
-    background: #4f46e5;
+    background: #7a29cc;
 }
 
 .progress-ring {
@@ -493,7 +528,7 @@ body {
     visibility: hidden;
     padding: 5px;
     white-space: nowrap;
-    font-family: Arial, sans-serif;
+    font-family: 'Aptos', 'Segoe UI', Arial, sans-serif;
     font-size: 14px;
     color: #000;
     background-color: #f9f9f9;
@@ -502,7 +537,7 @@ body {
 }
 
 .vis-network {
-    background-color: #fafafa;
+    background-color: var(--bg-card);
 }
 
 /* Heuristic Mining Styles */
@@ -511,7 +546,7 @@ input[type="range"] {
     appearance: none;
     width: 100%;
     height: 6px;
-    background: #e5e7eb;
+    background: var(--border-color);
     border-radius: 3px;
     outline: none;
 }
@@ -521,7 +556,7 @@ input[type="range"]::-webkit-slider-thumb {
     appearance: none;
     width: 16px;
     height: 16px;
-    background: #667eea;
+    background: var(--accent-primary);
     border-radius: 50%;
     cursor: pointer;
 }
@@ -529,7 +564,7 @@ input[type="range"]::-webkit-slider-thumb {
 input[type="range"]::-moz-range-thumb {
     width: 16px;
     height: 16px;
-    background: #667eea;
+    background: var(--accent-primary);
     border-radius: 50%;
     cursor: pointer;
     border: none;
@@ -553,7 +588,7 @@ input[type="range"]::-moz-range-thumb {
 
 /* Fullscreen styles */
 .card:fullscreen {
-    background: white;
+    background: var(--bg-card);
     padding: 2rem;
     display: flex;
     flex-direction: column;
