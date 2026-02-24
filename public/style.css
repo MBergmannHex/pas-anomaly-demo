@@ -186,6 +186,28 @@
     background-color: rgba(99, 102, 241, 0.15) !important;
 }
 
+/* Tailwind gradient stop overrides for dark mode
+   (bg-gradient-to-r from-* to-* use CSS vars, so bg-* override alone won't work) */
+[data-theme="dark"] .from-indigo-50 {
+    --tw-gradient-from: rgba(99, 102, 241, 0.18);
+}
+[data-theme="dark"] .to-purple-50 {
+    --tw-gradient-to: rgba(168, 85, 247, 0.12);
+}
+[data-theme="dark"] .from-blue-50 {
+    --tw-gradient-from: rgba(59, 130, 246, 0.15);
+}
+[data-theme="dark"] .to-indigo-50 {
+    --tw-gradient-to: rgba(99, 102, 241, 0.12);
+}
+[data-theme="dark"] .from-green-50 {
+    --tw-gradient-from: rgba(34, 197, 94, 0.12);
+}
+[data-theme="dark"] .to-emerald-50,
+[data-theme="dark"] .to-green-50 {
+    --tw-gradient-to: rgba(16, 185, 129, 0.10);
+}
+
 [data-theme="dark"] .text-indigo-800,
 [data-theme="dark"] .text-indigo-700,
 [data-theme="dark"] .text-indigo-600,
