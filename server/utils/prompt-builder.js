@@ -3,12 +3,66 @@
  * Assembles complex AI prompts from structured data for D&R rationalization
  */
 
+// Category keywords that indicate a philosophy rule is relevant to per-alarm rationalization.
+// Used as fallback when philosophyRules.site_specific_rules is absent (e.g., legacy extractions).
+const RATIONALIZATION_RULE_KEYWORDS = [
+    'alarm objective',
+    'alarm definition',
+    'alarm qualification',
+    'priority determination',
+    'priority levels',
+    'consequence assessment',
+    'rationalization guidance',
+    'response time',
+    'pre-alarm',
+    'pre-trip',
+    'bad value',
+    'esd valve',
+    'gas detection',
+    'building alarms',
+    'duplicate alarms',
+    'trip vs',
+    'trips / initiator',
+    'voting',
+    'redundant',
+    'manual task',
+];
+
+/**
+ * Extract rationalization-relevant rules from a philosophy object.
+ * Prefers philosophyRules.site_specific_rules (new extractions).
+ * Falls back to filtering philosophyRules.rules by category keywords (legacy extractions).
+ * Returns null if no rules are available.
+ * @param {Object} philosophyRules
+ * @returns {Array|null}
+ */
+function extractSiteSpecificRules(philosophyRules) {
+    if (!philosophyRules) return null;
+
+    // Prefer explicitly curated subset from new extractions
+    if (Array.isArray(philosophyRules.site_specific_rules) && philosophyRules.site_specific_rules.length > 0) {
+        return philosophyRules.site_specific_rules;
+    }
+
+    // Fallback: filter full rules array by relevant category keywords
+    if (Array.isArray(philosophyRules.rules) && philosophyRules.rules.length > 0) {
+        const filtered = philosophyRules.rules.filter(r => {
+            if (!r.category) return false;
+            const cat = r.category.toLowerCase();
+            return RATIONALIZATION_RULE_KEYWORDS.some(kw => cat.includes(kw));
+        });
+        return filtered.length > 0 ? filtered : null;
+    }
+
+    return null;
+}
+
 /**
  * Build the user prompt for batch rationalization
  * @param {Object} data - Structured input data
  * @param {Array} data.alarms - Array of alarm objects to rationalize
  * @param {String} data.processContext - Process description
- * @param {Object} data.philosophyRules - Extracted philosophy rules (priority_matrix, severity_matrix)
+ * @param {Object} data.philosophyRules - Extracted philosophy rules (priority_matrix, severity_matrix, site_specific_rules)
  * @param {Object} data.processAnalysis - Process analysis results (optional)
  * @param {Array} data.referenceAlarms - D&R-complete reference alarms (optional)
  * @param {Array} data.previousDrafts - Previously drafted alarms in this batch (optional)
@@ -33,10 +87,17 @@ function buildBatchRationalizationPrompt(data) {
         return `${i + 1}. Full Alarm Name: ${fullName}\n   Description: ${desc}`;
     }).join('\n\n');
 
-    // Build philosophy rules context
-    const rulesContext = philosophyRules ?
-        `\nPhilosophy Rules:\n- Priority Matrix: ${JSON.stringify(philosophyRules.priority_matrix || [])}\n- Severity Matrix: ${JSON.stringify(philosophyRules.severity_matrix || [])}`
-        : '';
+    // Build philosophy rules context (matrices + site-specific rationalization rules)
+    let rulesContext = '';
+    if (philosophyRules) {
+        rulesContext = `\nPhilosophy Rules:\n- Priority Matrix: ${JSON.stringify(philosophyRules.priority_matrix || [])}\n- Severity Matrix: ${JSON.stringify(philosophyRules.severity_matrix || [])}`;
+
+        const siteRules = extractSiteSpecificRules(philosophyRules);
+        if (siteRules) {
+            const ruleLines = siteRules.map(r => `  [${r.id}] ${r.category}: ${r.rule}`).join('\n');
+            rulesContext += `\n- Site-Specific Rationalization Rules (apply these when relevant):\n${ruleLines}`;
+        }
+    }
 
     // Build process analysis context
     let processAnalysisContext = '';

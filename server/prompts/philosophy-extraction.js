@@ -142,6 +142,13 @@ Output MUST be valid JSON with this exact structure:
       "rule": "...",
       "source": ["Section X.Y"]
     }
+  ],
+  "site_specific_rules": [
+    {
+      "id": "ALM-001",
+      "category": "...",
+      "rule": "..."
+    }
   ]
 }
 
@@ -151,5 +158,23 @@ CRITICAL INSTRUCTIONS:
 - The priority_matrix should contain all combinations of severity levels and response time ranges found in the document
 - The severity_matrix should define what each severity level means for each impact category
 - Include ALL rules found in the document in the "rules" array
+- The "site_specific_rules" array is a CURATED SUBSET of "rules" containing ONLY rules that directly
+  affect per-alarm rationalization decisions. Include rules in these categories (if present in the document):
+  * Alarm qualification: what makes an event an alarm vs. not an alarm (REMOVE candidates)
+  * Duplicate alarm policy: rules about eliminating alarms that indicate the same condition
+  * Priority determination: how to assign priority levels beyond the matrix (e.g., pre-alarm requirements)
+  * Consequence assessment methodology: worst-case severity, probability assumptions, cascading failure assumptions
+  * Response time definition and classes
+  * Alarm qualification by urgency (e.g., >30 min = no alarm)
+  * Pre-alarm / pre-trip rules
+  * Bad Value alarm defaults and priority rules
+  * ESD valve position alarm rules
+  * Gas detection and LEL alarm priorities
+  * Trip vs. pre-trip priority logic
+  * Voting / redundant sensor alarm handling
+  * Specific alarm type overrides (e.g., manual task alarms = Low)
+  EXCLUDE: governance, KPI targets, shelving approvals, MOC procedures, training, HMI configuration,
+  audit/enforcement software, access control, and any rule that does not affect how an individual
+  alarm's cause/consequence/priority/corrective action is determined.
 
 Return ONLY the JSON object. Do not include markdown code blocks.`;
