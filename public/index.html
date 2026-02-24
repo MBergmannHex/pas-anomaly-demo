@@ -298,7 +298,7 @@
         }
 
         .insight-card-close:hover {
-            color: #1e40af;
+            color: var(--accent-primary);
         }
 
         /* Help Modal */
@@ -439,7 +439,7 @@
                         <i className={`fas ${icon} text-xl`}></i>
                         <span className="insight-card-title">{title}</span>
                     </div>
-                    <div className="text-sm text-blue-900">
+                    <div className="text-sm" style={{color: 'var(--text-primary)'}}>
                         {children}
                     </div>
                     {onMoreInfo && (

@@ -114,6 +114,57 @@
     border-color: #2563eb;
 }
 
+/* Dark mode overrides for blue/purple/red Tailwind classes used in DFG visualization */
+[data-theme="dark"] .bg-blue-50 {
+    background-color: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .text-blue-900,
+[data-theme="dark"] .text-blue-800 {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .text-blue-700,
+[data-theme="dark"] .text-blue-600 {
+    color: var(--color-accent-aqua) !important;
+}
+
+[data-theme="dark"] .bg-purple-50 {
+    background-color: rgba(153, 51, 255, 0.15) !important;
+}
+
+[data-theme="dark"] .text-purple-800 {
+    color: var(--color-accent-purple) !important;
+}
+
+[data-theme="dark"] .bg-red-50 {
+    background-color: rgba(239, 68, 68, 0.12) !important;
+}
+
+[data-theme="dark"] .text-red-800 {
+    color: #f87171 !important;
+}
+
+[data-theme="dark"] .text-orange-700 {
+    color: var(--color-accent-orange) !important;
+}
+
+[data-theme="dark"] .bg-orange-200 {
+    background-color: rgba(244, 102, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .bg-blue-200 {
+    background-color: rgba(0, 255, 255, 0.2) !important;
+}
+
+[data-theme="dark"] .bg-gray-200 {
+    background-color: var(--bg-hover) !important;
+}
+
+[data-theme="dark"] .text-gray-400 {
+    color: var(--text-muted) !important;
+}
+
 /* ============================================
    Base Styles
    ============================================ */
