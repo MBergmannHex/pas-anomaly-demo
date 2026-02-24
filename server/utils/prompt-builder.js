@@ -213,7 +213,7 @@ CRITICAL REASONING REQUIREMENTS:
 - If based on philosophy rules/matrix, cite it: "Per philosophy matrix: [consequence] + [response time] = [priority]"
 - If based on DCS platform preset rules from prompt knowledge, cite it: "Per [Platform] preset: [rule applied]"
 - If based on Combination Alarm, ESD Bypass, or Rate of Change rules, cite the specific rule section
-- If a HH/LL alarm is based on its H/L counterpart in this batch, cite it: "Escalation of [AlarmName] H/L rationalization"
+- If a HH/LL alarm is based on its H/L counterpart in this batch, cite it: "Escalation of [AlarmName] H/L rationalization"`;
 
     return userPrompt;
 }
