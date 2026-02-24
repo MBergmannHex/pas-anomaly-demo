@@ -1611,6 +1611,52 @@ Return a merged, enriched JSON object with the SAME structure as the input, but 
     // BATCH AI DRAFTING
     // ============================================
 
+    /**
+     * Detect alarm threshold level from AlarmDisplayName.
+     * Returns 2 for HH/LL alarms, 1 for H/L alarms, 0 for non-threshold alarms.
+     * HH/LL patterns are checked FIRST to prevent HIHI/LOLO from matching H/L patterns.
+     */
+    getAlarmLevel(alarmDisplayName) {
+        if (!alarmDisplayName) return 0;
+        const name = alarmDisplayName.toUpperCase();
+        // HH / LL (double-threshold) — check before H/L to avoid false matches inside HIHI/LOLO
+        if (/HIGHHIGH/.test(name)) return 2;
+        if (/LOWLOW/.test(name))   return 2;
+        if (/HIHI/.test(name))     return 2;
+        if (/LOLO/.test(name))     return 2;
+        if (/HH$/.test(name))      return 2;
+        if (/LL$/.test(name))      return 2;
+        // H / L (single-threshold)
+        if (/HIGH/.test(name))     return 1;
+        if (/LOW/.test(name))      return 1;
+        if (/HI$/.test(name))      return 1;
+        if (/LO$/.test(name))      return 1;
+        return 0; // non-threshold (BADPV, CMDDIS, CHGOFST, etc.)
+    },
+
+    /**
+     * Sort alarms so that within each tag, H/L alarms always precede HH/LL alarms.
+     * This mirrors D&R workshop practice: rationalize the pre-alarm first, then
+     * use it as the baseline for the more critical double-threshold alarm.
+     * Sort order: Tag (asc) → alarm level (0→1→2) → AlarmDisplayName (asc)
+     */
+    sortAlarmsForDR(alarms) {
+        return [...alarms].sort((a, b) => {
+            const tagA = (a.Tag || a.tag || '').toUpperCase();
+            const tagB = (b.Tag || b.tag || '').toUpperCase();
+            if (tagA < tagB) return -1;
+            if (tagA > tagB) return 1;
+
+            const levelA = this.getAlarmLevel(a.AlarmDisplayName || a.alarmDisplayName || '');
+            const levelB = this.getAlarmLevel(b.AlarmDisplayName || b.alarmDisplayName || '');
+            if (levelA !== levelB) return levelA - levelB;
+
+            const nameA = (a.AlarmDisplayName || a.alarmDisplayName || '').toUpperCase();
+            const nameB = (b.AlarmDisplayName || b.alarmDisplayName || '').toUpperCase();
+            return nameA < nameB ? -1 : nameA > nameB ? 1 : 0;
+        });
+    },
+
     async batchDraftRationalizations(alarms, processContext, philosophyRules, imageBase64, onProgress, processAnalysis = null) {
         if (!window.chatbotService.isConfigured()) {
             throw new Error('Azure OpenAI is not configured.');
@@ -1621,8 +1667,11 @@ Return a merged, enriched JSON object with the SAME structure as the input, but 
         const BATCH_SIZE = 10;
         const batches = [];
 
-        for (let i = 0; i < alarms.length; i += BATCH_SIZE) {
-            batches.push(alarms.slice(i, i + BATCH_SIZE));
+        // Sort alarms so H/L precedes HH/LL within each tag group before batching
+        const sortedAlarms = this.sortAlarmsForDR(alarms);
+
+        for (let i = 0; i < sortedAlarms.length; i += BATCH_SIZE) {
+            batches.push(sortedAlarms.slice(i, i + BATCH_SIZE));
         }
 
         for (let batchIdx = 0; batchIdx < batches.length; batchIdx++) {

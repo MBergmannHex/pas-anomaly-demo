@@ -3,6 +3,41 @@
  * Assembles complex AI prompts from structured data for D&R rationalization
  */
 
+// Alarm level detection — mirrors dr-processor.js getAlarmLevel() logic (server-side copy).
+// Returns 2 for HH/LL, 1 for H/L, 0 for non-threshold alarms.
+function getAlarmLevel(alarmDisplayName) {
+    if (!alarmDisplayName) return 0;
+    const name = alarmDisplayName.toUpperCase();
+    if (/HIGHHIGH/.test(name)) return 2;
+    if (/LOWLOW/.test(name))   return 2;
+    if (/HIHI/.test(name))     return 2;
+    if (/LOLO/.test(name))     return 2;
+    if (/HH$/.test(name))      return 2;
+    if (/LL$/.test(name))      return 2;
+    if (/HIGH/.test(name))     return 1;
+    if (/LOW/.test(name))      return 1;
+    if (/HI$/.test(name))      return 1;
+    if (/LO$/.test(name))      return 1;
+    return 0;
+}
+
+/**
+ * Find tags in the batch that have both a H/L alarm and a HH/LL alarm.
+ * Returns an array of tag strings, or empty array if no such pairs exist.
+ */
+function detectHHLLPairs(alarms) {
+    const tagLevels = {};
+    alarms.forEach(a => {
+        const tag = a.Tag || a.tag || '';
+        const level = getAlarmLevel(a.AlarmDisplayName || a.alarmDisplayName || '');
+        if (!tagLevels[tag]) tagLevels[tag] = new Set();
+        tagLevels[tag].add(level);
+    });
+    return Object.entries(tagLevels)
+        .filter(([, levels]) => levels.has(1) && levels.has(2))
+        .map(([tag]) => tag);
+}
+
 // Category keywords that indicate a philosophy rule is relevant to per-alarm rationalization.
 // Used as fallback when philosophyRules.site_specific_rules is absent (e.g., legacy extractions).
 const RATIONALIZATION_RULE_KEYWORDS = [
@@ -158,9 +193,15 @@ function buildBatchRationalizationPrompt(data) {
             : `\n\nIMPORTANT - PRIORITY NAMING: The source data uses NUMERIC priority names (Priority 1, Priority 2, Priority 3, etc.). Your Proposed Priority values MUST use the same numeric naming style (e.g., "Priority 1", "Priority 2", "Priority 3", "No Alarm", "Remove"). Do NOT use descriptive names like "High" for this dataset.\n`;
     }
 
+    // Build HH/LL processing-order instruction when the batch contains paired alarms
+    const hhllPairTags = detectHHLLPairs(alarms);
+    const hhllOrderInstruction = hhllPairTags.length > 0
+        ? `\n\nPROCESSING ORDER — H/L BEFORE HH/LL: This batch contains single-threshold (H/L) and double-threshold (HH/LL) alarms on the same tag(s): ${hhllPairTags.join(', ')}. For each of these tags, rationalize the H/L alarm FIRST, then use its cause/consequence/priority as the baseline for the corresponding HH/LL alarm. The HH/LL alarm MUST represent a clear escalation: more severe consequence if ignored, shorter maximum response time, and equal or higher priority compared to its H/L counterpart. If no meaningful escalation is possible, recommend REMOVE for the HH/LL alarm.\n`
+        : '';
+
     // Assemble final user prompt
     const userPrompt = `Process Context: ${processContext || 'Industrial process equipment'}
-${rulesContext}${processAnalysisContext}${referenceContext}${previousContext}${prioritySchemeInstruction}
+${rulesContext}${processAnalysisContext}${referenceContext}${previousContext}${prioritySchemeInstruction}${hhllOrderInstruction}
 Alarms to rationalize:
 ${alarmList}
 
@@ -170,8 +211,9 @@ CRITICAL REASONING REQUIREMENTS:
 - In your Reasoning field, ALWAYS clearly state the source of your priority decision
 - If based on a D&R-complete reference alarm, cite it: "Based on reference alarm [AlarmName]..."
 - If based on philosophy rules/matrix, cite it: "Per philosophy matrix: [consequence] + [response time] = [priority]"
-- If based on vendor preset rules from prompt knowledge, cite it: "Per [Vendor] preset: [rule applied]"
-- If based on Combination Alarm, ESD Bypass, or Rate of Change rules, cite the specific rule section`;
+- If based on DCS platform preset rules from prompt knowledge, cite it: "Per [Platform] preset: [rule applied]"
+- If based on Combination Alarm, ESD Bypass, or Rate of Change rules, cite the specific rule section
+- If a HH/LL alarm is based on its H/L counterpart in this batch, cite it: "Escalation of [AlarmName] H/L rationalization"
 
     return userPrompt;
 }
