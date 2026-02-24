@@ -34,7 +34,9 @@ jobs:
 
     - name: Deploy to Azure Web App using Azure CLI
       run: |
-        az webapp deployment source config-zip \
+        az webapp deploy \
           --resource-group AIC-Lab \
           --name ${{ env.AZURE_WEBAPP_NAME }} \
-          --src deploy.zip
+          --src-path deploy.zip \
+          --type zip \
+          --async true
