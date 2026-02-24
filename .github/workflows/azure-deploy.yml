@@ -39,4 +39,27 @@ jobs:
           --name ${{ env.AZURE_WEBAPP_NAME }} \
           --src-path deploy.zip \
           --type zip \
-          --async true
+          --async true || echo "CLI polling timed out - checking deployment status via REST API"
+
+        # Poll deployment status directly (CLI may time out before site starts, but deployment succeeds)
+        SUB_ID=$(az account show --query id -o tsv)
+        DEPLOY_URL="https://management.azure.com/subscriptions/${SUB_ID}/resourceGroups/AIC-Lab/providers/Microsoft.Web/sites/${{ env.AZURE_WEBAPP_NAME }}/deployments?api-version=2022-03-01"
+        echo "Verifying deployment via REST API..."
+        for i in $(seq 1 20); do
+          STATUS=$(az rest --method get --url "${DEPLOY_URL}" \
+            --query "value[0].properties.status" -o tsv 2>/dev/null || echo "error")
+          ACTIVE=$(az rest --method get --url "${DEPLOY_URL}" \
+            --query "value[0].properties.active" -o tsv 2>/dev/null || echo "false")
+          echo "Deployment status: ${STATUS}, active: ${ACTIVE} (attempt ${i}/20)"
+          if [ "${STATUS}" = "4" ]; then
+            echo "Deployment succeeded and is active on Azure."
+            exit 0
+          fi
+          if [ "${STATUS}" = "3" ]; then
+            echo "Deployment FAILED on Azure."
+            exit 1
+          fi
+          sleep 15
+        done
+        echo "Deployment status check timed out after 5 minutes."
+        exit 1
