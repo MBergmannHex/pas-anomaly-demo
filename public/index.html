@@ -736,6 +736,7 @@
 
             const processDataWithMappings = async (rawData, mappings) => {
                 setIsProcessing(true);
+                setShowColumnMapping(false);
                 try {
                     const formattedUnitLabel = formatColumnName(mappings.unit);
                     setUnitColumnLabel(formattedUnitLabel);
