@@ -1201,6 +1201,16 @@
                                 setMadbData(savedMadb);
                                 addLog('Restored uploaded data from database');
                             }
+                            const savedPhilosophy = await window.dbService.load('philosophyRules_dr');
+                            if (savedPhilosophy) {
+                                setPhilosophyRules(savedPhilosophy);
+                                addLog('Restored philosophy rules from database');
+                            }
+                            const savedProcessAnalysis = await window.dbService.load('processAnalysis_dr');
+                            if (savedProcessAnalysis) {
+                                setProcessAnalysis(savedProcessAnalysis);
+                                addLog('Restored process analysis from database');
+                            }
                         } catch (e) {
                             console.error("Failed to load state", e);
                             addLog('Warning: Failed to ensure previous session availability');
@@ -1241,6 +1251,19 @@
                         });
                     }
                 }, [madbData]);
+
+                // Persist philosophy rules and process analysis so they survive theme toggles
+                // (AIRationalizationWizard is defined inside AlarmAnalyzerApp, so any parent
+                // re-render creates a new function ref and React remounts this component)
+                React.useEffect(() => {
+                    if (!appLoaded) return;
+                    window.dbService.save('philosophyRules_dr', philosophyRules || null).catch(console.error);
+                }, [philosophyRules, appLoaded]);
+
+                React.useEffect(() => {
+                    if (!appLoaded) return;
+                    window.dbService.save('processAnalysis_dr', processAnalysis || null).catch(console.error);
+                }, [processAnalysis, appLoaded]);
 
                 const addLog = (msg) => setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
 
@@ -1485,6 +1508,8 @@
                     try {
                         localStorage.removeItem('aiDrWizard_config');
                         await window.dbService.save('madbData', []);
+                        await window.dbService.save('philosophyRules_dr', null);
+                        await window.dbService.save('processAnalysis_dr', null);
                     } catch (e) { console.error('Failed to clear persisted data', e); }
                     addLog('Started new D&R run — all data cleared');
                 };

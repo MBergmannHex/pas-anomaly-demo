@@ -162,6 +162,35 @@
     color: #f87171 !important;
 }
 
+/* Green - success states, loaded boxes */
+[data-theme="dark"] .bg-green-50,
+[data-theme="dark"] .bg-green-100 {
+    background-color: rgba(34, 197, 94, 0.12) !important;
+}
+
+[data-theme="dark"] .border-green-200 {
+    border-color: rgba(74, 222, 128, 0.3) !important;
+}
+
+[data-theme="dark"] .text-green-700,
+[data-theme="dark"] .text-green-600 {
+    color: #86efac !important;
+}
+
+[data-theme="dark"] .text-green-800 {
+    color: #bbf7d0 !important;
+}
+
+/* Indigo - file inputs, step indicators */
+[data-theme="dark"] .bg-indigo-50 {
+    background-color: rgba(99, 102, 241, 0.15) !important;
+}
+
+[data-theme="dark"] .text-indigo-700,
+[data-theme="dark"] .text-indigo-600 {
+    color: #a5b4fc !important;
+}
+
 [data-theme="dark"] .text-orange-700 {
     color: var(--color-accent-orange) !important;
 }
