@@ -1947,6 +1947,37 @@
                                             <div className="bg-white p-3 rounded border"><h5 className="font-medium mb-2">Priority Matrix</h5><pre className="text-xs overflow-auto max-h-40">{JSON.stringify(philosophyRules.priority_matrix, null, 2)}</pre></div>
                                             <div className="bg-white p-3 rounded border"><h5 className="font-medium mb-2">Severity Matrix</h5><pre className="text-xs overflow-auto max-h-40">{JSON.stringify(philosophyRules.severity_matrix, null, 2)}</pre></div>
                                         </div>
+                                        {(philosophyRules.rules?.length > 0 || philosophyRules.site_specific_rules?.length > 0) && (
+                                            <div className="bg-white p-3 rounded border mt-4">
+                                                <div className="flex items-center justify-between mb-1">
+                                                    <h5 className="font-medium">Alarm Philosophy Rules</h5>
+                                                    <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{(philosophyRules.rules?.length || 0) + (philosophyRules.site_specific_rules?.length || 0)} rules</span>
+                                                </div>
+                                                <p className="text-xs text-gray-500 mb-2">Rule IDs below may be referenced in AI reasoning — use this panel to look up what each rule says.</p>
+                                                <div className="overflow-auto max-h-64 border rounded">
+                                                    <table className="text-xs w-full border-collapse">
+                                                        <thead className="bg-gray-50 sticky top-0">
+                                                            <tr>
+                                                                <th className="text-left p-2 font-medium text-gray-600 border-b border-r w-24">Rule ID</th>
+                                                                <th className="text-left p-2 font-medium text-gray-600 border-b border-r w-32">Category</th>
+                                                                <th className="text-left p-2 font-medium text-gray-600 border-b border-r">Rule</th>
+                                                                <th className="text-left p-2 font-medium text-gray-600 border-b w-28">Source</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {[...(philosophyRules.rules || []), ...(philosophyRules.site_specific_rules || [])].map((rule, i) => (
+                                                                <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                                    <td className="p-2 border-b border-r font-mono font-bold text-indigo-600 whitespace-nowrap align-top">{rule.id}</td>
+                                                                    <td className="p-2 border-b border-r text-gray-600 whitespace-nowrap align-top">{rule.category}</td>
+                                                                    <td className="p-2 border-b border-r text-gray-700 align-top">{rule.rule}</td>
+                                                                    <td className="p-2 border-b text-gray-500 align-top">{Array.isArray(rule.source) ? rule.source.join(', ') : (rule.source || '—')}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 ) : <div className="bg-yellow-50 border border-yellow-200 p-6 text-center rounded-lg"><i className="fas fa-exclamation-triangle text-yellow-500 text-3xl"></i><p className="mt-2">No philosophy loaded</p></div>}
 
