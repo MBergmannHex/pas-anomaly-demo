@@ -2312,6 +2312,31 @@
                                                         {r.draft['AI Reasoning'] && (
                                                             <div className="mt-3 p-2 bg-indigo-50 rounded text-sm"><i className="fas fa-lightbulb text-indigo-600 mr-2"></i><span className="font-medium">AI Reasoning:</span> {r.draft['AI Reasoning']}</div>
                                                         )}
+                                                        {r.draft['severity_per_category']?.length > 0 && (
+                                                            <div className="mt-3 border-t pt-3">
+                                                                <p className="text-xs font-medium text-gray-600 mb-2"><i className="fas fa-layer-group mr-1 text-indigo-500"></i>Severity per Impact Category <span className="text-gray-400 font-normal">(highest severity determines priority)</span></p>
+                                                                <div className="border rounded overflow-hidden">
+                                                                    <table className="text-xs w-full border-collapse">
+                                                                        <thead>
+                                                                            <tr className="bg-gray-50">
+                                                                                <th className="text-left p-1.5 font-medium text-gray-600 border-b border-r w-48">Impact Category</th>
+                                                                                <th className="text-left p-1.5 font-medium text-gray-600 border-b">AI-Assessed Severity</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {r.draft['severity_per_category'].map((sc, j) => (
+                                                                                <tr key={j} className={j % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                                                    <td className="p-1.5 border-b border-r text-gray-700">{sc.category}</td>
+                                                                                    <td className="p-1.5 border-b">
+                                                                                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${sc.severity === 'SEVERE' ? 'bg-red-100 text-red-700' : sc.severity === 'MAJOR' ? 'bg-orange-100 text-orange-700' : sc.severity === 'MINOR' ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'}`}>{sc.severity || 'NONE'}</span>
+                                                                                    </td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )}
                                             </div>

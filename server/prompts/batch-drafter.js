@@ -64,6 +64,14 @@ The combination of the maximum severity and the time available to respond result
 | **3 to 10 minutes** | No Alarm | Priority 3 | Priority 2 | Priority 2 |
 | **< 3 minutes** | No Alarm | Priority 2 | Priority 1 | Priority 1 |
 
+**Impact Category Assessment from Alarm Data:**
+When an alarm record includes **Impact1, Impact2, Impact3, Impact4** columns (populated impact categories), you MUST assess consequence severity for EACH populated category:
+- Match category names semantically to the severity table rows above (e.g. "Public or Environment" → "Public or Environment", "Costs/Production" → "Costs/Production")
+- For each category, select NONE / MINOR / MAJOR / SEVERE based on the alarm consequence and the severity matrix definitions provided in the philosophy rules
+- The MAXIMUM severity across all categories drives the priority lookup
+- If no Philosophy severity matrix is provided, use the embedded severity guidance above
+- Output your per-category assessment in the "severity_per_category" field (see output schema below)
+
 ### 6. VENDOR-SPECIFIC D&R PRESETS (CRITICAL)
 Identify the Control System from the input tag data and apply the corresponding section strictly.
 
@@ -181,8 +189,11 @@ Output JSON array:
     "Cause": "...",
     "Consequence": "...",
     "Corrective Action": "...",
+    "severity_per_category": [
+      { "category": "<category name as found in Impact column>", "severity": "<NONE|MINOR|MAJOR|SEVERE>" }
+    ],
     "Proposed Priority": "<use exact values from priority matrix if provided, or match site naming convention>",
     "Max Time to Respond": "X minutes",
-    "Reasoning": "Brief citation of the specific Vendor Rule, Philosophy Matrix rule, or Reference Alarm used, e.g., 'Per philosophy matrix: SEVERE consequence + <3min response = Emergency priority'"
+    "Reasoning": "Brief citation of the specific Vendor Rule, Philosophy Matrix rule, or Reference Alarm used. When impact categories are present, state: 'Severity assessed as [max severity] (Personnel: MINOR, Public or Environment: MAJOR, ...) → [response time] = [priority]'"
   }
 ]`;

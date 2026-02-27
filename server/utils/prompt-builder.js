@@ -119,7 +119,23 @@ function buildBatchRationalizationPrompt(data) {
     const alarmList = alarms.map((a, i) => {
         const fullName = getFullAlarmName(a);
         const desc = a.Description || a.description || '';
-        return `${i + 1}. Full Alarm Name: ${fullName}\n   Description: ${desc}`;
+
+        // Include impact categories and existing severities if present in CSV data.
+        // Column pattern: Impact1/Severity1, Impact2/Severity2, ... (dynamic, up to 8 pairs)
+        const impactParts = [];
+        for (let n = 1; n <= 8; n++) {
+            const cat = a[`Impact${n}`];
+            const sev = a[`Severity${n}`];
+            if (cat && cat.toString().trim()) {
+                const sevNote = sev && sev.toString().trim() ? ` [current: ${sev}]` : '';
+                impactParts.push(`${cat.toString().trim()}${sevNote}`);
+            }
+        }
+        const impactStr = impactParts.length > 0
+            ? `\n   Impact Categories: ${impactParts.join(' | ')}`
+            : '';
+
+        return `${i + 1}. Full Alarm Name: ${fullName}\n   Description: ${desc}${impactStr}`;
     }).join('\n\n');
 
     // Build philosophy rules context (matrices + site-specific rationalization rules)

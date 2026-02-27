@@ -1769,7 +1769,8 @@ Return a merged, enriched JSON object with the SAME structure as the input, but 
                         'Corrective Action': 'AI: ' + (draft['Corrective Action'] || ''),
                         'Proposed Priority': 'AI: ' + (draft['Proposed Priority'] || ''),
                         'Max Time to Respond': 'AI: ' + (draft['Max Time to Respond'] || ''),
-                        'AI Reasoning': draft.Reasoning || ''
+                        'AI Reasoning': draft.Reasoning || '',
+                        'severity_per_category': Array.isArray(draft.severity_per_category) ? draft.severity_per_category : []
                     },
                     success: true
                 };
