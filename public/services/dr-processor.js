@@ -1820,8 +1820,25 @@ Return a merged, enriched JSON object with the SAME structure as the input, but 
                 const conseqCol = this.findNextAvailableSlot(row, 'Consequence');
                 const correctiveCol = this.findNextAvailableSlot(row, 'Corrective Action');
 
+                // Write AI-assessed severities back to existing SeverityN columns.
+                // For each severity_per_category entry, find the ImpactN column whose value
+                // matches the category and write the AI severity into the corresponding SeverityN.
+                const severityUpdates = {};
+                if (Array.isArray(draft['severity_per_category'])) {
+                    draft['severity_per_category'].forEach(sc => {
+                        for (let n = 1; n <= 8; n++) {
+                            const cat = row[`Impact${n}`];
+                            if (cat && cat.toString().trim() === sc.category) {
+                                severityUpdates[`Severity${n}`] = 'AI: ' + (sc.severity || 'NONE');
+                                break;
+                            }
+                        }
+                    });
+                }
+
                 updatedData[idx] = {
                     ...row,
+                    ...severityUpdates,
                     [causeCol]: draft.Cause,
                     [conseqCol]: draft.Consequence,
                     [correctiveCol]: draft['Corrective Action'],
