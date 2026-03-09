@@ -41,6 +41,7 @@ app.use('/api/dr', require('./routes/dr-process'));
 app.use('/api/chat', require('./routes/chat'));
 app.use('/api/control-loop', require('./routes/control-loop'));
 app.use('/api/analysis', require('./routes/analysis'));
+app.use('/api/models', require('./routes/models'));
 
 // Serve static frontend files
 app.use(express.static(path.join(__dirname, '..', 'public')));

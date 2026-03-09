@@ -515,6 +515,13 @@
                 apiVersion: localStorage.getItem('chatbotApiVersion') || '2024-12-01-preview',
                 reasoningEffort: localStorage.getItem('chatbotReasoningEffort') || 'low'
             }));
+            const [availableModels, setAvailableModels] = React.useState([]);
+            React.useEffect(() => {
+                fetch('/api/models')
+                    .then(r => r.ok ? r.json() : null)
+                    .then(data => { if (data && data.chatModels) setAvailableModels(data.chatModels); })
+                    .catch(() => {});
+            }, []);
 
             // Theme & Settings Panel State
             const [appTheme, setAppTheme] = React.useState(() => {
@@ -4550,14 +4557,34 @@
                                         <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>
                                             <i className="fas fa-comments mr-1"></i>General Chat Model
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={chatbotSettings.generalDeploymentName}
-                                            onChange={(e) => setChatbotSettings({ ...chatbotSettings, generalDeploymentName: e.target.value })}
-                                            className="w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500"
-                                            style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
-                                            placeholder="gpt-4.1, gpt-4o, etc."
-                                        />
+                                        {availableModels.length > 0 ? (
+                                            <select
+                                                value={chatbotSettings.generalDeploymentName}
+                                                onChange={(e) => setChatbotSettings({ ...chatbotSettings, generalDeploymentName: e.target.value })}
+                                                className="w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500"
+                                                style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                                            >
+                                                <optgroup label="★ Preferred">
+                                                    {availableModels.filter(m => m.preferred).map(m => (
+                                                        React.createElement('option', { key: m.deployment, value: m.deployment }, m.deployment)
+                                                    ))}
+                                                </optgroup>
+                                                <optgroup label="All Models">
+                                                    {availableModels.filter(m => !m.preferred).map(m => (
+                                                        React.createElement('option', { key: m.deployment, value: m.deployment }, m.deployment)
+                                                    ))}
+                                                </optgroup>
+                                            </select>
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                value={chatbotSettings.generalDeploymentName}
+                                                onChange={(e) => setChatbotSettings({ ...chatbotSettings, generalDeploymentName: e.target.value })}
+                                                className="w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500"
+                                                style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                                                placeholder="gpt-4.1, gpt-4o, etc."
+                                            />
+                                        )}
                                         <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
                                             Used for AI Assistant chat
                                         </p>
@@ -4568,14 +4595,34 @@
                                         <label className="block text-sm font-medium mb-1 text-purple-700 dark:text-purple-300">
                                             <i className="fas fa-brain mr-1"></i>D&R Reasoning Model
                                         </label>
-                                        <input
-                                            type="text"
-                                            value={chatbotSettings.drDeploymentName}
-                                            onChange={(e) => setChatbotSettings({ ...chatbotSettings, drDeploymentName: e.target.value })}
-                                            className="w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-purple-500"
-                                            style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
-                                            placeholder="gpt-5, o1, o3, o4-mini, etc."
-                                        />
+                                        {availableModels.length > 0 ? (
+                                            <select
+                                                value={chatbotSettings.drDeploymentName}
+                                                onChange={(e) => setChatbotSettings({ ...chatbotSettings, drDeploymentName: e.target.value })}
+                                                className="w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-purple-500"
+                                                style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                                            >
+                                                <optgroup label="★ Preferred">
+                                                    {availableModels.filter(m => m.preferred).map(m => (
+                                                        React.createElement('option', { key: m.deployment, value: m.deployment }, m.deployment)
+                                                    ))}
+                                                </optgroup>
+                                                <optgroup label="All Models">
+                                                    {availableModels.filter(m => !m.preferred).map(m => (
+                                                        React.createElement('option', { key: m.deployment, value: m.deployment }, m.deployment)
+                                                    ))}
+                                                </optgroup>
+                                            </select>
+                                        ) : (
+                                            <input
+                                                type="text"
+                                                value={chatbotSettings.drDeploymentName}
+                                                onChange={(e) => setChatbotSettings({ ...chatbotSettings, drDeploymentName: e.target.value })}
+                                                className="w-full px-3 py-2 rounded-lg border focus:ring-2 focus:ring-purple-500"
+                                                style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                                                placeholder="gpt-5, o1, o3, o4-mini, etc."
+                                            />
+                                        )}
                                         <p className="text-xs mt-1 text-purple-600 dark:text-purple-400">
                                             Used for AI Rationalization workflows (supports reasoning models)
                                         </p>

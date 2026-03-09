@@ -1,0 +1,138 @@
+{
+  "endpoint": "https://hobbits-gpt-eastus2.cognitiveservices.azure.com/",
+  "resource": "hobbits-gpt-eastUS2",
+  "resourceGroup": "Hobbits-AI-Lab",
+  "kind": "AIServices",
+  "location": "eastus2",
+  "retrievedAt": "2026-03-09",
+  "chatModels": [
+    {
+      "deployment": "gpt-5.2",
+      "model": "gpt-5.2",
+      "version": "2025-12-11",
+      "sku": "GlobalStandard",
+      "capacity": 640,
+      "preferred": true
+    },
+    {
+      "deployment": "gpt-5.2-chat",
+      "model": "gpt-5.2-chat",
+      "version": "2025-12-11",
+      "sku": "GlobalStandard",
+      "capacity": 450,
+      "preferred": false
+    },
+    {
+      "deployment": "gpt-5.2-chat-2",
+      "model": "gpt-5.2-chat",
+      "version": "2026-02-10",
+      "sku": "GlobalStandard",
+      "capacity": 250,
+      "preferred": false
+    },
+    {
+      "deployment": "gpt-5.1",
+      "model": "gpt-5.1",
+      "version": "2025-11-13",
+      "sku": "GlobalStandard",
+      "capacity": 600,
+      "preferred": false
+    },
+    {
+      "deployment": "gpt-5.1-chat",
+      "model": "gpt-5.1-chat",
+      "version": "2025-11-13",
+      "sku": "GlobalStandard",
+      "capacity": 450,
+      "preferred": false
+    },
+    {
+      "deployment": "gpt-5.1-codex-max",
+      "model": "gpt-5.1-codex-max",
+      "version": "2025-12-04",
+      "sku": "GlobalStandard",
+      "capacity": 501,
+      "preferred": false
+    },
+    {
+      "deployment": "gpt-5",
+      "model": "gpt-5",
+      "version": "2025-08-07",
+      "sku": "GlobalStandard",
+      "capacity": 800,
+      "preferred": false
+    },
+    {
+      "deployment": "gpt-5-chat",
+      "model": "gpt-5-chat",
+      "version": "2025-08-07",
+      "sku": "GlobalStandard",
+      "capacity": 199,
+      "preferred": false
+    },
+    {
+      "deployment": "gpt-5-mini",
+      "model": "gpt-5-mini",
+      "version": "2025-08-07",
+      "sku": "GlobalStandard",
+      "capacity": 150,
+      "preferred": false
+    },
+    {
+      "deployment": "gpt-4.1",
+      "model": "gpt-4.1",
+      "version": "2025-04-14",
+      "sku": "GlobalStandard",
+      "capacity": 370,
+      "preferred": true
+    },
+    {
+      "deployment": "gpt-4.1-mini",
+      "model": "gpt-4.1-mini",
+      "version": "2025-04-14",
+      "sku": "GlobalStandard",
+      "capacity": 450,
+      "preferred": false
+    },
+    {
+      "deployment": "gpt-4o",
+      "model": "gpt-4o",
+      "version": "2024-11-20",
+      "sku": "GlobalStandard",
+      "capacity": 455,
+      "preferred": false
+    },
+    {
+      "deployment": "gpt-4o-standard",
+      "model": "gpt-4o",
+      "version": "2024-11-20",
+      "sku": "Standard",
+      "capacity": 30,
+      "preferred": false
+    },
+    {
+      "deployment": "gpt-4-turbo",
+      "model": "gpt-4o",
+      "version": "2024-11-20",
+      "sku": "Standard",
+      "capacity": 60,
+      "preferred": false
+    },
+    {
+      "deployment": "gpt-35-turbo",
+      "model": "gpt-4.1-mini",
+      "version": "2025-04-14",
+      "sku": "Standard",
+      "capacity": 58,
+      "preferred": false
+    },
+    {
+      "deployment": "gpt-35-turbo-16k",
+      "model": "gpt-4.1-mini",
+      "version": "2025-04-14",
+      "sku": "Standard",
+      "capacity": 240,
+      "preferred": false
+    }
+  ]
+}

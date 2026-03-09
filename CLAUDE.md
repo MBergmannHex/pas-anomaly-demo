@@ -55,6 +55,26 @@ The backend uses **Azure OpenAI** with two deployment configurations:
 - `AZURE_OPENAI_GENERAL_DEPLOYMENT` - Standard chat/assistant (e.g., gpt-4.1)
 - `AZURE_OPENAI_DR_DEPLOYMENT` - D&R reasoning model (e.g., gpt-5, o1, o3)
 
+All available chat/reasoning deployments are catalogued in [server/models.json](server/models.json) with metadata (model name, version, SKU, capacity, preferred flag). Preferred deployments are `gpt-5.2` (D&R) and `gpt-4.1` (general).
+
+**To refresh the models list**, use the Azure Management REST API (requires `az login`):
+
+```bash
+SUBSCRIPTION_ID="466c9654-1c8f-4bf5-95ba-c464c64aa485"
+TOKEN=$(az account get-access-token --resource https://management.azure.com/ --query accessToken -o tsv)
+
+curl -s -H "Authorization: Bearer $TOKEN" \
+  "https://management.azure.com/subscriptions/$SUBSCRIPTION_ID/resourceGroups/Hobbits-AI-Lab/providers/Microsoft.CognitiveServices/accounts/hobbits-gpt-eastUS2/deployments?api-version=2024-10-01"
+```
+
+**Key facts about the Azure OpenAI resource:**
+- Resource name: `hobbits-gpt-eastUS2` (note capital US — case-sensitive in ARM API)
+- Resource group: `Hobbits-AI-Lab`
+- Kind: `AIServices` (not `OpenAI`) — supports latest GPT-5.x models
+- Location: `eastus2`
+- Subscription: `466c9654-1c8f-4bf5-95ba-c464c64aa485`
+- The `/openai/deployments` REST endpoint returns 404 for this resource type; use the ARM management API above instead.
+
 API credentials are stored server-side in `.env` (local) or Azure App Service environment variables (production).
 
 ### PDF & Document Processing
