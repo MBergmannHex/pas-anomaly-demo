@@ -9,6 +9,7 @@ on:
 env:
   AZURE_WEBAPP_NAME: pas-anomaly
   NODE_VERSION: '22'
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   test:
@@ -24,8 +25,27 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Run tests
+    - name: Run unit tests
       run: npm test
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps chromium
+
+    - name: Run E2E tests
+      run: npm run test:e2e
+      # Visual regression tests require baseline snapshots committed to the repo.
+      # Run `npm run test:e2e:update-snapshots` locally first, then commit the snapshots.
+      env:
+        AZURE_OPENAI_API_KEY: test-key
+        AZURE_OPENAI_ENDPOINT: https://test.openai.azure.com
+
+    - name: Upload Playwright report on failure
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 7
 
   deploy:
     needs: test

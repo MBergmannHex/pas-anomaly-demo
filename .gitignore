@@ -5,3 +5,7 @@ node_modules/
 
 # API keys and configuration
 openai-config.js
+
+# Playwright
+test-results/
+playwright-report/

@@ -7,7 +7,10 @@
     "start": "node server/server.js",
     "dev": "nodemon server/server.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test e2e/app-loads.spec.js e2e/csv-upload.spec.js e2e/dr-wizard.spec.js e2e/settings.spec.js",
+    "test:e2e:visual": "playwright test e2e/visual-regression.spec.js",
+    "test:e2e:update-snapshots": "playwright test e2e/visual-regression.spec.js --update-snapshots"
   },
   "engines": {
     "node": ">=18.0.0"
@@ -20,6 +23,7 @@
     "helmet": "^8.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "docx": "^9.6.0",
     "nodemon": "^3.1.0",
     "supertest": "^7.2.2",
