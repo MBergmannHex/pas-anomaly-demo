@@ -150,27 +150,66 @@ The app is configured for Azure App Service with:
 - **Environment variables** - Set in Azure Portal under Configuration
 - **Deployment** - Git push, GitHub Actions, or Azure CLI
 
+## Testing
+
+### Running Tests
+
+```bash
+npm test          # run all tests once (also used in CI)
+npm run test:watch  # watch mode during development
+```
+
+### Test Stack
+
+- **Framework**: [Vitest](https://vitest.dev/) v4 + [Supertest](https://github.com/ladjs/supertest) for HTTP assertions
+- **Config**: [vitest.config.js](vitest.config.js) — targets `server/__tests__/**/*.test.js`
+- **Globals**: `describe`, `it`, `expect` are injected globally (no import needed in test files)
+
+### Test Suites (`server/__tests__/`)
+
+| File | What it covers |
+|------|---------------|
+| `health.test.js` | `GET /api/health` — status, version, ISO timestamp |
+| `models.test.js` | `GET /api/models` — schema, preferred model flags |
+| `config.test.js` | `server/config.js` — defaults, structure, rate limiting |
+| `prompts.test.js` | All 9 prompt exports — types, template function outputs |
+| `error-handler.test.js` | Status codes, API key/endpoint sanitization, stack trace visibility |
+
+### Architecture Note
+
+`server/server.js` only starts the HTTP listener. The Express app is defined in `server/app.js` and exported for use by tests via supertest. When adding new routes, register them in `server/app.js`, not `server/server.js`.
+
+### CI Gate
+
+GitHub Actions runs `npm test` in a separate `test` job **before** the `deploy` job. If any test fails, the deploy is blocked. Never bypass this gate by skipping CI.
+
+### Adding Tests
+
+When adding a new backend route or service, add a corresponding test file in `server/__tests__/`. Mock any Azure OpenAI calls with `vi.mock('../services/openai-proxy')` — never make real API calls in tests.
+
+---
+
 ## Development Workflow
 
 ### Git Commits and Deployment
 
-**IMPORTANT**: After making code changes, always commit and push to GitHub to trigger automatic deployment to Azure.
+**IMPORTANT**: After making code changes, run `npm test` locally, then commit and push to GitHub to trigger automatic deployment to Azure.
 
 **Standard workflow:**
 1. Make changes to code
-2. Test locally (if applicable)
+2. Run `npm test` — fix any failures before committing
 3. Stage and commit changes:
    ```bash
    git add <files>
    git commit -m "Description of changes
 
-   Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>"
+   Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
    ```
 4. **Push to GitHub** (triggers auto-deployment):
    ```bash
    git push origin main
    ```
-5. GitHub Actions automatically deploys to Azure App Service
+5. GitHub Actions runs tests, then deploys to Azure App Service if tests pass
 
 **Files to exclude from commits:**
 - `.env` (local environment variables)

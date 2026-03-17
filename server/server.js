@@ -3,56 +3,8 @@
  * Express server that proxies Azure OpenAI calls and serves the frontend
  */
 
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const path = require('path');
+const app = require('./app');
 const config = require('./config');
-const errorHandler = require('./middleware/error-handler');
-const rateLimiter = require('./middleware/rate-limiter');
-
-const app = express();
-
-// CORS configuration - MUST come before helmet
-app.use(cors({
-    origin: config.server.corsOrigin,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
-// Security middleware
-app.use(helmet({
-    contentSecurityPolicy: false,  // Disabled because frontend loads many CDN scripts
-    crossOriginEmbedderPolicy: false,  // Disable to allow cross-origin requests
-    crossOriginResourcePolicy: { policy: "cross-origin" }  // Allow cross-origin resources
-}));
-
-// Body parsing with high limit for P&ID images + PDF text
-app.use(express.json({ limit: config.server.bodyLimit }));
-app.use(express.urlencoded({ extended: true, limit: config.server.bodyLimit }));
-
-// Apply rate limiting to API routes
-app.use('/api/', rateLimiter);
-
-// API routes
-app.use('/api', require('./routes/health'));
-app.use('/api/dr', require('./routes/dr-process'));
-app.use('/api/chat', require('./routes/chat'));
-app.use('/api/control-loop', require('./routes/control-loop'));
-app.use('/api/analysis', require('./routes/analysis'));
-app.use('/api/models', require('./routes/models'));
-
-// Serve static frontend files
-app.use(express.static(path.join(__dirname, '..', 'public')));
-
-// SPA fallback - serve index.html for any non-API route
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
-});
-
-// Error handling middleware (must be last)
-app.use(errorHandler);
 
 // Start server
 const PORT = config.server.port;
