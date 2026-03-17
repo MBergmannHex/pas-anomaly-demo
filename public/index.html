@@ -819,6 +819,9 @@
                     safety: null,
                     notes: null
                 });
+                const [dragOver, setDragOver] = React.useState({});
+                const drWizardPhilosophyRef = React.useRef(null);
+                const drWizardSafetyRef = React.useRef(null);
                 const [scope, setScope] = React.useState({
                     unit: 'All',
                     startDate: '',
@@ -841,6 +844,16 @@
 
                 const handleFileChange = (type, e) => {
                     setFiles(prev => ({ ...prev, [type]: e.target.files[0] }));
+                };
+
+                const handleDzDragEnter = (key, e) => { e.preventDefault(); e.stopPropagation(); setDragOver(p => ({...p, [key]: true})); };
+                const handleDzDragLeave = (key, e) => { e.preventDefault(); e.stopPropagation(); setDragOver(p => ({...p, [key]: false})); };
+                const handleDzDragOver  = (e) => { e.preventDefault(); e.stopPropagation(); };
+                const handleDzDrop = (key, type, e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    setDragOver(p => ({...p, [key]: false}));
+                    const file = e.dataTransfer.files[0];
+                    if (file) handleFileChange(type, { target: { files: [file] } });
                 };
 
                 const handleStartProcessing = async () => {
@@ -943,17 +956,51 @@
                             <div className="space-y-6">
                                 <h3 className="text-xl font-semibold">Step 1: Configuration Upload</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors">
-                                        <i className="fas fa-book text-4xl text-indigo-400 mb-2"></i>
+                                    <div
+                                        className={`relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${dragOver['dw-philosophy'] ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-indigo-500'}`}
+                                        onClick={() => drWizardPhilosophyRef.current?.click()}
+                                        onDragEnter={(e) => handleDzDragEnter('dw-philosophy', e)}
+                                        onDragLeave={(e) => handleDzDragLeave('dw-philosophy', e)}
+                                        onDragOver={handleDzDragOver}
+                                        onDrop={(e) => handleDzDrop('dw-philosophy', 'philosophy', e)}
+                                    >
+                                        <i className={`fas fa-book text-4xl text-indigo-400 mb-2 ${dragOver['dw-philosophy'] ? 'animate-pulse' : ''}`}></i>
                                         <p className="font-medium">Alarm Philosophy (PDF/Text)</p>
                                         <p className="text-sm text-gray-500 mb-4">Required. Defines priority rules.</p>
-                                        <input type="file" onChange={(e) => handleFileChange('philosophy', e)} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+                                        {files.philosophy
+                                            ? <p className="text-sm text-indigo-600 font-medium"><i className="fas fa-check-circle mr-1"></i>{files.philosophy.name}</p>
+                                            : <p className="text-xs text-gray-400">Drop file here or click to browse</p>
+                                        }
+                                        <input ref={drWizardPhilosophyRef} type="file" onClick={(e) => e.stopPropagation()} onChange={(e) => handleFileChange('philosophy', e)} className="hidden" />
+                                        {dragOver['dw-philosophy'] && (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-indigo-50/80 pointer-events-none">
+                                                <i className="fas fa-cloud-upload-alt text-4xl text-indigo-500 animate-bounce"></i>
+                                                <p className="text-sm font-semibold text-indigo-700 mt-2">Drop PDF / Text here</p>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-indigo-500 transition-colors">
-                                        <i className="fas fa-shield-alt text-4xl text-green-400 mb-2"></i>
+                                    <div
+                                        className={`relative border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${dragOver['dw-safety'] ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-green-500'}`}
+                                        onClick={() => drWizardSafetyRef.current?.click()}
+                                        onDragEnter={(e) => handleDzDragEnter('dw-safety', e)}
+                                        onDragLeave={(e) => handleDzDragLeave('dw-safety', e)}
+                                        onDragOver={handleDzDragOver}
+                                        onDrop={(e) => handleDzDrop('dw-safety', 'safety', e)}
+                                    >
+                                        <i className={`fas fa-shield-alt text-4xl text-green-400 mb-2 ${dragOver['dw-safety'] ? 'animate-pulse' : ''}`}></i>
                                         <p className="font-medium">Process Safety / HAZOP (PDF/Text)</p>
                                         <p className="text-sm text-gray-500 mb-4">Optional. Enriches consequences.</p>
-                                        <input type="file" onChange={(e) => handleFileChange('safety', e)} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700 hover:file:bg-green-100" />
+                                        {files.safety
+                                            ? <p className="text-sm text-green-600 font-medium"><i className="fas fa-check-circle mr-1"></i>{files.safety.name}</p>
+                                            : <p className="text-xs text-gray-400">Drop file here or click to browse</p>
+                                        }
+                                        <input ref={drWizardSafetyRef} type="file" onClick={(e) => e.stopPropagation()} onChange={(e) => handleFileChange('safety', e)} className="hidden" />
+                                        {dragOver['dw-safety'] && (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-green-50/80 pointer-events-none">
+                                                <i className="fas fa-cloud-upload-alt text-4xl text-green-500 animate-bounce"></i>
+                                                <p className="text-sm font-semibold text-green-700 mt-2">Drop PDF / Text here</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex justify-end">
@@ -1178,6 +1225,9 @@
                 const [madbFileName, setMadbFileName] = React.useState('');
                 const [philosophyFileName, setPhilosophyFileName] = React.useState('');
                 const [appLoaded, setAppLoaded] = React.useState(false); // To tracking initial load
+                const [drDragOver, setDrDragOver] = React.useState({});
+                const drMadbInputRef = React.useRef(null);
+                const drPhilosophyInputRef = React.useRef(null);
 
                 // --- STATE PERSISTENCE ---
                 // Load state on mount
@@ -1273,6 +1323,16 @@
                 }, [processAnalysis, appLoaded]);
 
                 const addLog = (msg) => setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] ${msg}`]);
+
+                const handleDrDragEnter = (key, e) => { e.preventDefault(); e.stopPropagation(); setDrDragOver(p => ({...p, [key]: true})); };
+                const handleDrDragLeave = (key, e) => { e.preventDefault(); e.stopPropagation(); setDrDragOver(p => ({...p, [key]: false})); };
+                const handleDrDragOver  = (e) => { e.preventDefault(); e.stopPropagation(); };
+                const handleDrDrop = (key, handler, e) => {
+                    e.preventDefault(); e.stopPropagation();
+                    setDrDragOver(p => ({...p, [key]: false}));
+                    const file = e.dataTransfer.files[0];
+                    if (file) handler({ target: { files: [file] } });
+                };
 
                 const handleMadbUpload = async (e) => {
                     const file = e.target.files[0];
@@ -1615,8 +1675,15 @@
                                     )}
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className={`border-2 border-dashed rounded-lg p-6 text-center ${madbData.length > 0 ? 'border-green-400 bg-green-50 dark:bg-green-900/20' : 'border-gray-300 hover:border-indigo-500'}`}>
-                                        <i className={`fas fa-table text-4xl mb-2 ${madbData.length > 0 ? 'text-green-500' : 'text-indigo-400'}`}></i>
+                                    <div
+                                        className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${madbData.length > 0 ? 'border-green-400 bg-green-50 dark:bg-green-900/20' : drDragOver['dr-madb'] ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 cursor-pointer' : 'border-gray-300 hover:border-indigo-500 cursor-pointer'}`}
+                                        onClick={() => { if (madbData.length === 0) drMadbInputRef.current?.click(); }}
+                                        onDragEnter={(e) => { if (madbData.length === 0) handleDrDragEnter('dr-madb', e); }}
+                                        onDragLeave={(e) => handleDrDragLeave('dr-madb', e)}
+                                        onDragOver={handleDrDragOver}
+                                        onDrop={(e) => { if (madbData.length === 0) handleDrDrop('dr-madb', handleMadbUpload, e); else e.preventDefault(); }}
+                                    >
+                                        <i className={`fas fa-table text-4xl mb-2 ${madbData.length > 0 ? 'text-green-500' : drDragOver['dr-madb'] ? 'text-indigo-500 animate-pulse' : 'text-indigo-400'}`}></i>
                                         <p className="font-medium">Master Alarm Database (CSV)</p>
                                         {madbData.length > 0 ? (
                                             <div className="mt-3">
@@ -1625,18 +1692,32 @@
                                                 </p>
                                                 <p className="text-sm text-gray-500 dark:text-gray-400">{madbData.length} records loaded</p>
                                                 <button
-                                                    onClick={() => { setMadbData([]); setMadbFileName(''); setGroupedData([]); setTagExamples([]); }}
+                                                    onClick={(e) => { e.stopPropagation(); setMadbData([]); setMadbFileName(''); setGroupedData([]); setTagExamples([]); }}
                                                     className="text-xs text-gray-400 hover:text-red-500 mt-2"
                                                 >
                                                     <i className="fas fa-times mr-1"></i>Clear
                                                 </button>
                                             </div>
                                         ) : (
-                                            <input type="file" accept=".csv" onChange={handleMadbUpload} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-indigo-50 file:text-indigo-700 mt-2" />
+                                            <p className="text-xs text-gray-400 mt-2">Drop CSV here or click to browse</p>
+                                        )}
+                                        <input ref={drMadbInputRef} type="file" accept=".csv" onClick={(e) => e.stopPropagation()} onChange={handleMadbUpload} className="hidden" />
+                                        {drDragOver['dr-madb'] && madbData.length === 0 && (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-indigo-50/80 dark:bg-indigo-900/40 pointer-events-none">
+                                                <i className="fas fa-cloud-upload-alt text-4xl text-indigo-500 animate-bounce"></i>
+                                                <p className="text-sm font-semibold text-indigo-700 mt-2">Drop CSV here</p>
+                                            </div>
                                         )}
                                     </div>
-                                    <div className={`border-2 border-dashed rounded-lg p-6 text-center ${philosophyRules ? 'border-green-400 bg-green-50 dark:bg-green-900/20' : 'border-gray-300 hover:border-green-500'}`}>
-                                        <i className={`fas fa-book text-4xl mb-2 ${philosophyRules ? 'text-green-500' : 'text-green-400'}`}></i>
+                                    <div
+                                        className={`relative border-2 border-dashed rounded-lg p-6 text-center transition-colors ${philosophyRules ? 'border-green-400 bg-green-50 dark:bg-green-900/20' : drDragOver['dr-philosophy'] ? 'border-green-500 bg-green-50 dark:bg-green-900/20 cursor-pointer' : 'border-gray-300 hover:border-green-500 cursor-pointer'}`}
+                                        onClick={() => { if (!philosophyRules && !isProcessing) drPhilosophyInputRef.current?.click(); }}
+                                        onDragEnter={(e) => { if (!philosophyRules && !isProcessing) handleDrDragEnter('dr-philosophy', e); }}
+                                        onDragLeave={(e) => handleDrDragLeave('dr-philosophy', e)}
+                                        onDragOver={handleDrDragOver}
+                                        onDrop={(e) => { if (!philosophyRules && !isProcessing) handleDrDrop('dr-philosophy', handlePhilosophyUpload, e); else e.preventDefault(); }}
+                                    >
+                                        <i className={`fas fa-book text-4xl mb-2 ${philosophyRules ? 'text-green-500' : drDragOver['dr-philosophy'] ? 'text-green-500 animate-pulse' : 'text-green-400'}`}></i>
                                         <p className="font-medium">Alarm Philosophy</p>
                                         {isProcessing && philosophyFileName && !philosophyRules ? (
                                             <div className="mt-3">
@@ -1651,14 +1732,21 @@
                                                 </p>
                                                 <p className="text-sm text-gray-500 dark:text-gray-400">Rules extracted</p>
                                                 <button
-                                                    onClick={() => { setPhilosophyRules(null); setPhilosophyFileName(''); }}
+                                                    onClick={(e) => { e.stopPropagation(); setPhilosophyRules(null); setPhilosophyFileName(''); }}
                                                     className="text-xs text-gray-400 hover:text-red-500 mt-2"
                                                 >
                                                     <i className="fas fa-times mr-1"></i>Clear
                                                 </button>
                                             </div>
                                         ) : (
-                                            <input type="file" accept=".pdf,.txt,.docx" onChange={handlePhilosophyUpload} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-green-50 file:text-green-700 leading-tight mt-2" />
+                                            <p className="text-xs text-gray-400 mt-2">Drop PDF/TXT/DOCX here or click to browse</p>
+                                        )}
+                                        <input ref={drPhilosophyInputRef} type="file" accept=".pdf,.txt,.docx" onClick={(e) => e.stopPropagation()} onChange={handlePhilosophyUpload} className="hidden" />
+                                        {drDragOver['dr-philosophy'] && !philosophyRules && !isProcessing && (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-green-50/80 dark:bg-green-900/40 pointer-events-none">
+                                                <i className="fas fa-cloud-upload-alt text-4xl text-green-500 animate-bounce"></i>
+                                                <p className="text-sm font-semibold text-green-700 mt-2">Drop Philosophy here</p>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
